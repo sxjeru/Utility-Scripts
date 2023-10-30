@@ -7,7 +7,7 @@ def setup_logger(log_file):
     logger.setLevel(logging.DEBUG)
 
     # 创建一个文件handler，用于写入日志文件
-    file_handler = logging.FileHandler(log_file)
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
     file_handler.setLevel(logging.DEBUG)
 
     # 创建一个控制台handler，用于输出到控制台
@@ -35,7 +35,6 @@ def setup_logger(log_file):
     logger.addHandler(console_handler)
 
     return logger
-
 
 log = setup_logger('app.log')
 

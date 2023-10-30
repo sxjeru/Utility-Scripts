@@ -5,5 +5,22 @@ classID: # mc百科
   SlashBlade: 2843
   Vampirism - Become a vampire!: 930
   Armourer's Workshop: 464
-projectID: # CurseForge
+  Chisels & Bits - For Forge: 806
+  Chisels & Bits - For Fabric: 806
+  Architectury API (Fabric/Forge): 3434
+  I18nUpdateMod: 1188
+  Vein Mining (Fabric 1.16.4 - 1.19.2): 5616
+  Vein Mining (Fabric/Forge/Quilt): 5616
+  Jade 🔍: 3482
+  Starlight (Fabric): 3303
+  Caelus API (Forge): 2458
+  Ding (Forge): 428
+  TerraFirmaCraft: 2104
+  Polymorph (Fabric/Forge/Quilt): 2895
+  Polymorph (Fabric 1.16.1 - 1.19.2): 2895
+  MmmMmmMmmMmm (Target Dummy): 1139
+  Starlight (Forge): 3303
+projectID: # CurseForge (自从使用 slug 作为关键词后，一般就用不到了)
   Falling Leaves (Fabric): 417510
+  Origins (Fabric): 391943
+  Vein Mining (Fabric/Forge/Quilt): 431611

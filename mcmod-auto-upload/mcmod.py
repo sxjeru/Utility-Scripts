@@ -12,10 +12,11 @@ def getClassid(name):
     if name in Classid:
         return str(Classid[name])
     else:
-        url = '<api url>' + name.lower() # 搜索api非公开，请私聊重生
+        url = 'XXXX' + name.lower() # api非公开，请私聊重生
         res = requests.get(url)
         r = re.findall(r'class\/(\d+)', res.text)
-        if len(r) > 0:
+        r_name = re.findall(r'\((.+?\)?)\)', res.text)
+        if len(r) > 0 and (len(r_name) == 0 or r_name[-1] == name):
             log.info(f"获取百科 Class ID: {res.text}")
             # key = input() # 鉴于结果不准确的二次验证
             # if key == '':
@@ -24,7 +25,7 @@ def getClassid(name):
             #     return key
             return r[0]
         else:
-            log.error(f"未找到 {name} 的 classID，请手动输入")
+            log.error(f"未找到 {name} 的 mc百科 classID，请手动输入")
             class_id = input()
             Classid[name] = int(class_id)
             with open('id.yml', 'w', encoding='utf-8') as f:
@@ -46,13 +47,17 @@ def upload(cookie, file, classID, mcverList, platformList, apiList, tagList):
     }
     response = requests.post(url, headers=headers, files=form)
     msg = json.loads(response.text[3:])
-    if msg['success']['upload']:
-        log.info(f"文件 {file} 上传成功，{time.time()-start:.1f} s")
-    elif msg['success']['update']:
-        log.info(f"文件 {file} 覆盖成功，{time.time()-start:.1f} s")
-    else:
-        log.error(f"文件 {file} 上传失败，{time.time()-start:.1f} s")
-        log.info(msg)
+    try:
+        if msg['success']['upload']:
+            log.info(f"文件 {file} 上传成功，{time.time()-start:.1f} s")
+        elif msg['success']['update']:
+            log.info(f"文件 {file} 覆盖成功，{time.time()-start:.1f} s")
+        else:
+            log.error(f"文件 {file} 上传失败，服务器返回信息如下：")
+            log.error(msg)
+    except KeyError:
+        log.error(f"文件 {file} 上传失败，服务器返回信息如下：")
+        log.error(msg)
     file1.close()
     # os.unlink('mods/'+file)
 
