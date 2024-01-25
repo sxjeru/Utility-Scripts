@@ -5,7 +5,7 @@ import json
 import requests
 
 model_costs = {
-	"gpt-3.5-turbo-instruct": {"context": 0.0015, "generated": 0.002},
+    "gpt-3.5-turbo-instruct": {"context": 0.0015, "generated": 0.002},
     "gpt-3.5-turbo-0301": {"context": 0.0015, "generated": 0.002},
     "gpt-3.5-turbo-0613": {"context": 0.0015, "generated": 0.002},
     "gpt-3.5-turbo-16k": {"context": 0.003, "generated": 0.004},
@@ -98,7 +98,8 @@ def get_costs(start_date, end_date, id, headers):
 
 import csv
 def update_records(id, cost):
-    with open("records.csv", "r+", newline="") as file:
+    with open("records.csv", "a+", newline="") as file:
+	file.seek(0)
         reader = reversed(list(csv.reader(file)))
         flag = True
         for existing_row in reader:
@@ -109,6 +110,7 @@ def update_records(id, cost):
                 old_cost = float(existing_row[1])
                 break
         if flag:
+	    file.seek(0, 2)
             writer = csv.writer(file)
             writer.writerow([id, cost, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
             print(f"\n记录已更新: {old_cost} -> {cost}")
