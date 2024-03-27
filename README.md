@@ -1,5 +1,5 @@
-### 星穹铁道 更新补丁应用
-适用于 hdiff 补丁包，免于下载日渐庞大的完整游戏。
+### [星穹铁道 更新补丁应用](https://github.com/sxjeru/Utility-Scripts/tree/main/StarRail-hdiff-update)
+适用于 Hdiff 补丁包，免于下载日渐庞大的完整游戏。
 
 ### [OpenAI Cost 统计](https://github.com/sxjeru/Utility-Scripts/tree/main/openai-apikey-cost)
 适用于无账号登录权限，只有 apikey 的情况下，简单统计某个 key 在某一时段内的总费用。

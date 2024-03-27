@@ -1,5 +1,4 @@
-# 1. 解压 hdiff 并覆盖游戏根目录
-# 2. 确保本脚本与 hpatchz.exe 同在游戏根目录
+# Python 3
 import os, re, glob, json, hashlib, time
 start = time.time()
 
