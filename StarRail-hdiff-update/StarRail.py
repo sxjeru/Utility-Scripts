@@ -4,7 +4,10 @@ start = time.time()
 
 with open("deletefiles.txt", 'r') as f:
     for line in f.readlines():
-        os.remove(line.strip())
+        try:
+            os.remove(line.strip())
+        except Exception as e:
+            print(f"Error: {e}")
 print("Delete done! ({:.2f}s)\n".format(time.time() - start))
 os.remove("deletefiles.txt")
 
@@ -28,6 +31,7 @@ with open(md5txt[0], 'r') as f:
         if md5 != json.loads(line)['Md5']:
             print("有文件校验失败：" + path + "\n\n程序退出...")
             exit(1)
-print("All files are correct. Update done! ({:.2f}s)\n".format(time.time() - start))
+print("md5 verification completed, all files are correct.\nUpdate done! ({:.2f}s)\n".format(time.time() - start))
+print("Press any key to exit...")
 import msvcrt
 msvcrt.getch()
