@@ -14,7 +14,7 @@ with open("hdifffiles.txt", 'r') as f:
         hd.append(re.findall(r'"(.*?)"', line)[1])
 for i in hd:
     os.system("hpatchz.exe -f " + i + " " + i + ".hdiff " + i)
-    os.remove(i + ".diff")
+    os.remove(i + ".hdiff")
 print("\nPatch done! ({:.2f}s)\n".format(time.time() - start))
 os.remove("hdifffiles.txt")
 
