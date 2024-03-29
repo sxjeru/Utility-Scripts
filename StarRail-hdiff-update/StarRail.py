@@ -18,7 +18,7 @@ with open("hdifffiles.txt", 'r') as f:
 for i in hd:
     os.system("hpatchz.exe -f " + i + " " + i + ".hdiff " + i)
     os.remove(i + ".hdiff")
-print("\nPatch done! ({:.2f}s)\n".format(time.time() - start))
+print("\nPatch done! ({:.2f}s)\nWaiting for MD5 calculation...".format(time.time() - start))
 os.remove("hdifffiles.txt")
 
 hdpath = os.path.dirname(hd[0])
@@ -31,7 +31,7 @@ with open(md5txt[0], 'r') as f:
         if md5 != json.loads(line)['Md5']:
             print("有文件校验失败：" + path + "\n\n程序退出...")
             exit(1)
-print("md5 verification completed, all files are correct.\nUpdate done! ({:.2f}s)\n".format(time.time() - start))
+print("MD5 verification completed, all files are correct.\nUpdate done! ({:.2f}s)\n".format(time.time() - start))
 print("Press any key to exit...")
 import msvcrt
 msvcrt.getch()
