@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>MC百科 mod自动更新脚本</title>
+    <script type="text/javascript" src="/eel.js"></script>
+    <script src="main.js"></script>
+    <link rel="stylesheet" type="text/css" href="main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+      hljs.highlightAll();
+    </script>
+  </head>
+  <body>
+    <div class="mainBox">
+      <div class="rowBox">
+        <div class="logBox">
+          <pre><code class="txt" id='log'></code></pre>
+        </div>
+        <div class="colBox">
+          <div class="pg-text" id="pg-text"></div>
+          <div class="pg-container">
+            <div class="pg" id="pg"></div>
+          </div>
+          <div class="buttonContainer">
+            <button onclick="eel.start()" class="runButton">开始</button>
+            <button onclick="eel.main()" class="runButton">继续</button>
+          </div>
+          <div id="tableContainer" class="tableContainer"></div>
+        </div>
+      </div>
+      <script>
+        const parentElement = document.getElementById('tableContainer');
+        parentElement.addEventListener('click', function(event) {
+          if (event.target.tagName === 'A') {
+            event.target.classList.add('clicked');
+          }
+        });
+      </script>
+      <!-- <div id="frame" class="frame"><iframe id="mcmod"></iframe></div> -->
+      <div class="option">
+        <!-- <label>从第 i 个 mod 开始：</label> -->
+        <label>跳过前 i 个 mod：</label>
+        <input type="text" id="opt1" value=0>
+        <br><br>
+        <input type="checkbox" id="opt2" checked>
+        <label>自动遍历到底</label>
+      </div>
+    </div>
+  </body>
+</html>

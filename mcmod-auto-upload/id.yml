@@ -20,7 +20,78 @@ classID: # mc百科
   Polymorph (Fabric 1.16.1 - 1.19.2): 2895
   MmmMmmMmmMmm (Target Dummy): 1139
   Starlight (Forge): 3303
+  First-person Model (Forge/Fabric): 4391
+  Dragon Survival [Forge]: 3838
+  Foam​Fix: 978
+  Just Enough Resources (JER): 855
+  Waystones (Fabric Edition): 1339
+  Growthcraft Community Edition: 326
+  Catalogue (Fabric): 3743
+  "[ABANDONDED] Trajan's Tanks (Fabric)": 6167
+  Trajan's Tanks (Forge): 6167
+  Chalk (Fabric): 4997
+  SpeedRunIGT [Speedrun Verified In-game Timer / Support 1.7-1.19.1 / Fabric & Legacy Fabric]: 5323
+  GregTech CE Unofficial: 5343
+  Intercontinental Ballistic Redux: 7354
+  '[IU] Industrial Upgrade': 2811
+  Thut's Elevators: 1623
+  'Distant Horizons: A Level of Detail mod': 5009
+  Multiplayer Server Pause (Fabric): 6038
+  Multiplayer Server Pause (Forge): 6038
+  Magneticraft: 461
+  Anaku's Status Bars: 7443
+  Anaku's Status Bars [FORGE]: 7443
+  MemorySweep: 8653
+  PneumaticCraft: 270
+  Vic's Modern Warfare Mod [Discontinued]: 595
+  'Matter Overdrive: Community Edition': 5526
+  Spells & Shields: 7226
+  SOL - Carrot [Unofficial] 1.7.10: 10125
+  AE Additions - ExtraCells2 Fork: 5628
+  Gregicality Legacy (GTCE): 2524
+  Red Core: 11515
+  TF2 Stuff - Reloaded: 12498
+  Nature's Aura: 1547
+  Cloth Config API (Fabric/Forge): 2346
+  YUNG's API (Forge): 3372
+  YUNG's Better Mineshafts (Forge): 2788
+  YUNG's Better Mineshafts (Fabric): 2788
+  YUNG's API (Fabric): 3372
+  Patchouli (Fabric/Quilt): 1388
+  Immersive Portals (for Forge): 2410
+  Botania (Fabric/Quilt): 332
+  Croparia v4: 1006
+  Not Enough Crashes (Fabric): 2441
+  Not Enough Crashes (Forge): 2441
+  Farmer's Delight [Fabric]: 2820
+  Kiwi 🥝 (Forge): 1290
+  Architectury API (Fabric/Forge/NeoForge): 3434
+  Cloth Config API (Fabric/Forge/NeoForge): 2346
+  Kiwi 🥝 (Fabric): 1290
+  Alex's Mobs: 3318
+  AdvancementInfo: 5314
+  CodeChicken Lib 1.8.+: 562
+  Caelus API (Forge/NeoForge): 2458
+  Lithium (Fabric): 2292
+  Light Overlay (Rift/Forge/Fabric): 3049
+  Enderite Mod (for Forge): 2878
+  Enderite Mod (for Fabric): 2878
+  ARRP: 3677
+  'Ice and Fire: Dragons': 770
+  Better Ping Display [Fabric]: 2950
+  Just Enough Items (JEI): 459
+  Farmer's Delight: 2820
+  Galaxy Space [Addon for GalactiCraft]: 551
+  Upsizer Mod [FORGE]: 1582
+  Inventorio (Fabric): 4157
+  The Abyss II - The Other Side: 3527
+  Inventorio (Forge): 4157
+  Tinkers Construct: 3725
+  Open Terrain Generator (OTG): 1397
+  Silent Lib (silentlib): 1363
+  Reliquary Reincarnations: 525
+  Falling Leaves (NeoForge/Forge): 4135
 projectID: # CurseForge (自从使用 slug 作为关键词后，一般就用不到了)
-  Falling Leaves (Fabric): 417510
-  Origins (Fabric): 391943
-  Vein Mining (Fabric/Forge/Quilt): 431611
+  gregtechceu-modern: [890405, GregTech CE Unofficial]
+  pneumaticcraft: [224125, PneumaticCraft]
+  extracells2: [229218, ExtraCells2]
