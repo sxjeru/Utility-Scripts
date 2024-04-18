@@ -5,10 +5,16 @@ from email import parser
 import re, time
 from collections import OrderedDict
 from .log import log
+from .mcmod import yaml
 import quopri # 解码 MIME
 
-def getMail(tpe):
+with open('config.yml', 'r', encoding='utf-8') as f:
+    yml = yaml.load(f)
 
+def getMail(tpe):
+    pop_server = yml['mail-pop-server']
+    username = yml['mail-username']
+    password = yml['mail-password']
     start = time.time()
     pop_conn = poplib.POP3_SSL(pop_server)
     pop_conn.user(username)
@@ -16,7 +22,7 @@ def getMail(tpe):
     num_emails = len(pop_conn.list()[1])
 
     emails = []
-    for i in range(num_emails-0, 0, -1): # num_emails-1 则解析第二封
+    for i in range(num_emails, 0, -1): # num_emails-1 则解析第二封 (实际是全局第二封，逻辑上有误)
         lines = pop_conn.retr(i)[1]
         msg = b'\n'.join(lines).decode('utf-8')
         msg = parser.Parser().parsestr(msg)
@@ -24,11 +30,11 @@ def getMail(tpe):
         # sj = "Fwd: What's been happening at CurseForge"
         if msg['subject'] == sj:
             emails.append(msg)
-            if len(emails) == 1:
+            if len(emails) == yml['mail-id']:
                 break
 
     modNames = []
-    for email in emails:
+    for email in emails[-1:]: # TODO: 批量解析前几封邮件，目前只解析第 n 封
         body = email.get_payload()[tpe] # 0: plain text, 1: html
         body = quopri.decodestring(str(body)).decode('utf-8')
 
@@ -44,5 +50,7 @@ def getMail(tpe):
         modNames = list(OrderedDict.fromkeys(modNames)) # 去重
     pop_conn.quit()
     log.info(f"解析邮件成功，共 {len(modNames)} 个 mod，{time.time()-start:.1f} s")
+    match = re.findall(r'<h2 style="text-decoration: underline;">(.+)</h2>', body)
+    log.info(f"邮件日期：{match[0]}")
     log.debug(modNames)
     return modNames

@@ -6,7 +6,14 @@ from .utils import *
 from .log import log
 from .mcmod import getClassid, yaml
 
+with open('config.yml', 'r', encoding='utf-8') as f:
+    yml = yaml.load(f)
 
+headers = { 'x-api-key': yml['cf-api-key'] } # https://docs.curseforge.com/#authentication
+if not yml['proxy']: # not 匹配 None, ''
+    proxy = {}
+else:
+    proxy = { 'http': yml['proxy'], 'https': yml['proxy'] }
 session = requests.Session()
 retry = Retry(connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)

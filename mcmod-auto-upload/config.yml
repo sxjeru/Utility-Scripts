@@ -1,0 +1,14 @@
+# (必填) mcmod cookie，仅需 _uuid 部分。
+cookie: ''
+# (必填) CurseForge API Key: https://console.curseforge.com/?#/api-keys
+cf-api-key: ''
+# 本地代理地址，留空则不使用代理。
+proxy: ''
+
+# 依次为 CF 每日摘要收信邮箱的 POP 服务器域名，用户名，密码，均必填。
+mail-pop-server: ''
+mail-username: ''
+mail-password: ''
+
+# 解析第几封邮件，当错过某天上传时用。(默认为 1，即当日邮件，2 则为前一日，以此类推。)
+mail-id: 1

@@ -1,8 +1,12 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests, os, hashlib, re
 from urllib.parse import unquote
 from .log import log
+from .mcmod import yaml
 from collections import OrderedDict
+
+with open('config.yml', 'r', encoding='utf-8') as f:
+    yml = yaml.load(f)
 
 def withinHours(time_str):
     formats = ["%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"]
@@ -12,8 +16,8 @@ def withinHours(time_str):
             break
         except ValueError:
             pass
-    diff = datetime.utcnow() - time
-    return diff < timedelta(hours=40)
+    diff = datetime.now(timezone.utc).replace(tzinfo=None) - time
+    return diff < timedelta(hours=16 + 24 * yml['mail-id']) # 40 h + n days
 
 def download(file_url, proxy):
     filename = unquote(os.path.basename(file_url))
@@ -189,4 +193,9 @@ def getTag(file, isSnap):
         r += 'server,'
     return r[:-1]
 
+def checkConfig(yml, required_fields=["cookie", "cf-api-key", "mail-pop-server", "mail-username", "mail-password", "mail-id"]):
+    for field in required_fields:
+        if field not in yml or yml[field] is None:
+            print(f"配置文件不完整，请前往 config.yml 确认")
+            exit(1)  # 退出程序
 
