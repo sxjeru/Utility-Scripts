@@ -18,7 +18,7 @@ TODO: 支持 Modrinth，支持新mod上传，支持自动排序。
 
 ## mc百科部分 API
 
-也可以参考 [mcmod.py](https://github.com/sxjeru/Utility-Scripts/blob/main/mcmod-auto-upload/mcmod.py)，即 API 在 Python 下的一种实现方式。
+也可以参考 [mcmod.py](https://github.com/sxjeru/Utility-Scripts/blob/main/mcmod-auto-uploader/withGUI/mcmod.py)，即百科 API 在 Python 下的一种实现方式。
 
 ### 文件上传
 - Cookie 有效期 30天，可从下面的登录 API 获取，或直接从已登录百科的浏览器复制。
