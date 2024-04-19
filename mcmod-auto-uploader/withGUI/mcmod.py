@@ -6,13 +6,15 @@ from ruamel.yaml import YAML
 yaml=YAML()
 with open('id.yml', 'r', encoding='utf-8') as f:
     yml = yaml.load(f)
+with open('config.yml', 'r', encoding='utf-8') as f:
+    cfg = yaml.load(f)
 
 def getClassid(name):
     Classid = yml['classID']
     if name in Classid:
         return str(Classid[name])
     else:
-        url = yml['mcmod-api'] + name.lower() # api非公开，请私聊重生
+        url = cfg['mcmod-api'] + name.lower() # api非公开，请私聊重生
         try:
             res = requests.get(url)
         except requests.exceptions.RequestException as e:
