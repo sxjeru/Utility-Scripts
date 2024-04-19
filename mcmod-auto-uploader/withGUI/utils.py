@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-import requests, os, hashlib, re
+import requests, os, hashlib, re, msvcrt
 from urllib.parse import unquote
 from .log import log
 from .mcmod import yaml
@@ -195,7 +195,12 @@ def getTag(file, isSnap):
 
 def checkConfig(yml, required_fields=["cookie", "cf-api-key", "mail-pop-server", "mail-username", "mail-password", "mail-id"]):
     for field in required_fields:
-        if field not in yml or yml[field] is None:
-            print(f"配置文件不完整，请前往 config.yml 确认")
-            exit(1)  # 退出程序
-
+        if field not in yml or not yml[field]:
+            log.error("配置文件不完整，请前往 config.yml 确认。按任意键退出程序...")
+            msvcrt.getch()
+            exit(1)
+    hash_object = hashlib.sha256(yml["mcmod-api"].encode('utf-8'))
+    if hash_object.hexdigest() != "aaa065afa21ab95d050bac43c1dae768d3ade7b7746df1b093fe84862004c306":
+        log.error("请填写正确的 mcmod 搜索 API")
+        msvcrt.getch()
+        exit(1)

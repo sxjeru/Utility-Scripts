@@ -12,8 +12,13 @@ def getClassid(name):
     if name in Classid:
         return str(Classid[name])
     else:
-        url = 'https://xxx' + name.lower() # api非公开，请私聊重生
-        res = requests.get(url)
+        url = yml['mcmod-api'] + name.lower() # api非公开，请私聊重生
+        try:
+            res = requests.get(url)
+        except requests.exceptions.RequestException as e:
+            log.error(e)
+            log.error("获取百科 Class ID 失败，请检查配置文件与网络连接")
+            exit(1)
         r = re.findall(r'class\/(\d+)', res.text)
         r_name = re.findall(r'\((.+?\)?)\)', res.text)
         if len(r) > 0 and (len(r_name) == 0 or r_name[-1] == name):

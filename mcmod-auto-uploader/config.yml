@@ -1,7 +1,12 @@
 # (必填) mcmod cookie，仅需 _uuid 部分。
 cookie: ''
+
+# (必填) mcmod 搜索 API，获取百科 Class ID 用。(请私聊重生获取，只需修改 xxx 部分)
+mcmod-api: 'https://xxx/?key='
+
 # (必填) CurseForge API Key: https://console.curseforge.com/?#/api-keys
 cf-api-key: ''
+
 # 本地代理地址，留空则不使用代理。
 proxy: ''
 
