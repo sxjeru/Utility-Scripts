@@ -2,6 +2,8 @@
 
 本脚本实现自动从 CurseForge 获取当日更新并上传至 mc百科。
 
+请前往 [Releases](https://github.com/sxjeru/Utility-Scripts/releases/tag/1.0) 下载。
+
 用法：
 1. `config.yml` 补全配置文件；
 2. 运行 `main-gui.py`，自动在浏览器中打开网页 GUI；
@@ -12,7 +14,7 @@
 
 每次mod更新完毕，请务必前往该mod后台检查文件信息是否正确，并手动排序。
 
-TODO: 支持 Modrinth，支持新文件上传，支持自动排序。
+TODO: 支持 Modrinth，支持新mod上传，支持自动排序。
 
 ## mc百科部分 API
 
