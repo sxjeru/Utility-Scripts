@@ -1,3 +1,5 @@
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fsxjeru%2FUtility-Scripts.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fsxjeru%2FUtility-Scripts?ref=badge_shield)
+
 ### [星穹铁道 更新补丁应用](https://github.com/sxjeru/Utility-Scripts/tree/main/StarRail-hdiff-updater)
 适用于 Hdiff 补丁包，免于下载日渐庞大的完整游戏。
 
@@ -8,3 +10,7 @@
 目前已实现自动更新 CurseForge 每日邮件中提到的 mod。
 
 此外还包含 mc百科的文件上传 API 文档，可供希望在百科自动化更新自己 mod 的创作者参考。
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fsxjeru%2FUtility-Scripts.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fsxjeru%2FUtility-Scripts?ref=badge_large)
