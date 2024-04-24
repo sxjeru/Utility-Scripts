@@ -73,6 +73,11 @@ def getInfo(file, class_id):
                 isSnap = 1
             else:
                 ver.append(item)
+    versions = trimVer(ver, snap)
+    if not versions:
+        lst.append('版本号为空')
+    else:
+        lst.append(versions)
     lst.append(trimVer(ver, snap))
     lst.append(1) # 平台默认JAVA版
     lst.append(getAPI(file['gameVersions']))
@@ -91,7 +96,8 @@ def trimVer(vers, snap):
             repeat[int(ver.split('.')[1])] += 1
         return repeat
 
-    rep = [0, 0,0,0,0,0, 0,0,0,5,3, 3,3,3,5,3, 6,2,3,5,0] # 如第一个5，从头开始数为第9个，即 1.9 共有5个版本
+    rep = [0, 0,0,0,0,0, 0,0,0,5,3, 3,3,3,5,3, 6,2,3,5,0] 
+    # 如第一个5，从头(0)开始数为第9个，即 1.9 共有5个版本，即读到5个 1.9.x 版本后自动合并为一个 “1.9.x”
 
     def mergeVer(lst, ver):
         mid = ver.split('.')[1]
