@@ -12,6 +12,12 @@
 
 下载信息仅供参考，可能更新不及时，请见谅。
 
+2.2 -> 2.3
+
+OS (国际服): https://autopatchos.starrails.com/client/diff/hkrpg_global/game_2.2.0_2.3.0_hdiff_WwevYToSIVWLRkDA.zip
+
+CN (国服): https://autopatchcn.bhsr.com/client/diff/hkrpg_cn/game_2.2.0_2.3.0_hdiff_bUOAKNttlfhuVbOa.zip
+
 2.1 -> 2.2
 
 OS (国际服): https://autopatchos.starrails.com/client/hkrpg_global/35/game_2.1.0_2.2.0_hdiff_oAD65M4PktiBCKp3.zip
