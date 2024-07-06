@@ -6,6 +6,7 @@ import re, time
 from collections import OrderedDict
 from .log import log
 from .mcmod import yaml
+from .utils import getMailDate
 import quopri # 解码 MIME
 
 with open('config.yml', 'r', encoding='utf-8') as f:
@@ -51,6 +52,6 @@ def getMail(tpe):
     pop_conn.quit()
     log.info(f"解析邮件成功，共 {len(modNames)} 个 mod，{time.time()-start:.1f} s")
     match = re.findall(r'<h2 style="text-decoration: underline;">(.+)</h2>', body)
-    log.info(f"邮件日期：{match[0]}")
+    log.info(f"邮件日期：{getMailDate(match)}")
     log.debug(modNames)
     return modNames

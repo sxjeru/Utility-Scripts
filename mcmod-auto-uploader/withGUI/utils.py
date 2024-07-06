@@ -78,7 +78,6 @@ def getInfo(file, class_id):
         lst.append('版本号为空')
     else:
         lst.append(versions)
-    lst.append(trimVer(ver, snap))
     lst.append(1) # 平台默认JAVA版
     lst.append(getAPI(file['gameVersions']))
     lst.append(getTag(file, isSnap))
@@ -210,3 +209,19 @@ def checkConfig(yml, required_fields=["cookie", "cf-api-key", "mail-pop-server",
         log.error("请填写正确的 mcmod 搜索 API")
         msvcrt.getch()
         exit(1)
+
+month_mapping = {
+    'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+    'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12
+}
+
+def getMailDate(date_list):
+    latest_date = None
+    for date_str in date_list:
+        month_name, day = date_str.split()
+        month = month_mapping[month_name]
+        day = int(day)
+        date = datetime(year=datetime.now().year, month=month, day=day)
+        if latest_date is None or date > latest_date:
+            latest_date = date
+    return latest_date.strftime('%m/%d')
