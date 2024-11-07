@@ -68,7 +68,7 @@ def getInfo(file, class_id):
     ver, snap = [], []
     for item in file['gameVersions']:
         if re.match(r"^\d.+", item):
-            if item.find('Snapshot') != -1: # 处理快照版本号
+            if re.search(r'[Ss]napshot', item): # 处理快照版本号
                 snap.append(snapVer(file, item))
                 isSnap = 1
             else:
@@ -224,4 +224,4 @@ def getMailDate(date_list):
         date = datetime(year=datetime.now().year, month=month, day=day)
         if latest_date is None or date > latest_date:
             latest_date = date
-    return latest_date.strftime('%m/%d')
+    return latest_date.strftime('%m-%d')
