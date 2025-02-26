@@ -12,6 +12,10 @@
 
 下载信息仅供参考，可能更新不及时，请见谅。
 
+可在此处确认最新的补丁包：[OS](https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8&game_ids%5B%5D=4ziysqXOQ8)、[CN](https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?launcher_id=jGHBHlcOq1&game_ids%5B%5D=64kMb5iAWu)
+
+该脚本只在国际服客户端进行了测试，不保证国服可用性。
+
 2.2 -> 2.3
 
 OS (国际服): https://autopatchos.starrails.com/client/diff/hkrpg_global/game_2.2.0_2.3.0_hdiff_WwevYToSIVWLRkDA.zip
