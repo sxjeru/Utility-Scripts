@@ -5,8 +5,9 @@ from pathlib import Path
 
 def process_merges(data):
     """
-    处理JSON数据中的model.merges项
-    将形如["Ġpalab", "ra"]的数组转换为"Ġpalab ra"
+    https://github.com/CheshireCC/faster-whisper-GUI/issues/292
+    处理 tokenizer.json 中的 model.merges 项
+    将形如 ["Ġpalab", "ra"] 的数组转换为 "Ġpalab ra"
     """
     processed_count = 0
     
