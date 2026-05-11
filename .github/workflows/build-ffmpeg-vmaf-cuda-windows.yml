@@ -104,6 +104,7 @@ jobs:
           test -n "${VCToolsInstallDir:-}"
           msvc_bin_dir="$(cygpath -u "${VCToolsInstallDir}")/bin/Hostx64/x64"
           export PATH="${msvc_bin_dir}:${PATH}"
+          cuda_path_unix="$(cygpath -u "${CUDA_PATH}")"
 
           find libvmaf/src/cuda -type f \( -name '*.c' -o -name '*.h' -o -name '*.cu' -o -name '*.cuh' \) \
             -exec sed -i 's/#include <pthread.h>/#include "pthread.h"/g' {} +
@@ -138,12 +139,25 @@ jobs:
           libvmaf_cuda_src_win="$(cygpath -w "${PWD}/src/cuda")"
           export INCLUDE="${mingw_include_win};${libvmaf_src_win};${libvmaf_cuda_src_win};${INCLUDE:-}"
           export CL="/I${mingw_include_win} /I${libvmaf_src_win} /I${libvmaf_cuda_src_win} ${CL:-}"
+          cuda_host_compiler="$(cygpath -m "${msvc_bin_dir}/cl.exe")"
+          cuda_nvcc="$(cygpath -m "${cuda_path_unix}/bin/nvcc.exe")"
+          export CUDAHOSTCXX="${cuda_host_compiler}"
+          export PATH="${cuda_path_unix}/bin:${PATH}"
+          cat > meson-cuda.ini <<EOF
+          [binaries]
+          c = 'cl'
+          cpp = 'cl'
+          cuda = ['${cuda_nvcc}', '-allow-unsupported-compiler', '-ccbin', '${cuda_host_compiler}']
+          EOF
           command -v link
           where.exe link
           meson setup build \
+            --wipe \
             --vsenv \
+            --native-file meson-cuda.ini \
             --buildtype=release \
             --default-library=shared \
+            -Db_staticpic=false \
             -Denable_cuda=true \
             -Denable_float=true \
             -Dbuilt_in_models=true \
