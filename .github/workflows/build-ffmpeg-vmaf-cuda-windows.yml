@@ -76,10 +76,13 @@ jobs:
         run: |
           set -euxo pipefail
           command -v cl || true
+          command -v link || true
           command -v nvcc
           command -v gcc
           command -v meson
           command -v ninja
+          where.exe cl
+          where.exe link
           nvcc --version
           gcc --version
 
@@ -97,6 +100,10 @@ jobs:
           set -euxo pipefail
           git clone --depth 1 --branch "${VMAF_REF}" https://github.com/Netflix/vmaf.git
           cd vmaf
+
+          test -n "${VCToolsInstallDir:-}"
+          msvc_bin_dir="$(cygpath -u "${VCToolsInstallDir}")/bin/Hostx64/x64"
+          export PATH="${msvc_bin_dir}:${PATH}"
 
           find libvmaf/src/cuda -type f \( -name '*.c' -o -name '*.h' -o -name '*.cu' -o -name '*.cuh' \) \
             -exec sed -i 's/#include <pthread.h>/#include "pthread.h"/g' {} +
@@ -126,7 +133,10 @@ jobs:
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           mkdir -p "${vmaf_prefix}"
           cd libvmaf
+          command -v link
+          where.exe link
           meson setup build \
+            --vsenv \
             --buildtype=release \
             --default-library=shared \
             -Denable_cuda=true \
