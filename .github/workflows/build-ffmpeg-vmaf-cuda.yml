@@ -1,0 +1,318 @@
+name: build-ffmpeg-vmaf-cuda
+
+on:
+  workflow_dispatch:
+    inputs:
+      ffmpeg_ref:
+        description: FFmpeg git ref to build
+        required: false
+        default: master
+      vmaf_ref:
+        description: Netflix VMAF git ref to build
+        required: false
+        default: master
+      nv_codec_headers_ref:
+        description: nv-codec-headers git ref to build
+        required: false
+        default: master
+      ubuntu_cuda_package:
+        description: Ubuntu CUDA Toolkit apt package
+        required: false
+        default: cuda-toolkit-12-8
+      windows_cuda_version:
+        description: Windows CUDA Toolkit version for Jimver/cuda-toolkit
+        required: false
+        default: 12.8.1
+
+permissions:
+  contents: read
+
+env:
+  FFMPEG_REF: ${{ inputs.ffmpeg_ref || 'master' }}
+  VMAF_REF: ${{ inputs.vmaf_ref || 'master' }}
+  NV_CODEC_HEADERS_REF: ${{ inputs.nv_codec_headers_ref || 'master' }}
+
+jobs:
+  ubuntu-build:
+    name: Ubuntu build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CUDA_PACKAGE: ${{ inputs.ubuntu_cuda_package || 'cuda-toolkit-12-8' }}
+      FFMPEG_PREFIX: ${{ github.workspace }}/_install/ubuntu
+      PKG_CONFIG_PATH: /usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig
+      LD_LIBRARY_PATH: /usr/local/lib:/usr/local/lib/x86_64-linux-gnu:/usr/local/cuda/lib64
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates \
+            curl \
+            file \
+            g++ \
+            gcc \
+            git \
+            make \
+            meson \
+            nasm \
+            ninja-build \
+            pkg-config \
+            python3 \
+            python3-pip \
+            wget \
+            yasm
+
+      - name: Install CUDA Toolkit
+        shell: bash
+        run: |
+          set -euxo pipefail
+          . /etc/os-release
+          cuda_repo="ubuntu${VERSION_ID/./}"
+          wget -q "https://developer.download.nvidia.com/compute/cuda/repos/${cuda_repo}/x86_64/cuda-keyring_1.1-1_all.deb"
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends "${CUDA_PACKAGE}"
+          echo "/usr/local/cuda/bin" >> "$GITHUB_PATH"
+          echo "CUDA_HOME=/usr/local/cuda" >> "$GITHUB_ENV"
+          echo "CUDA_PATH=/usr/local/cuda" >> "$GITHUB_ENV"
+          nvcc --version
+
+      - name: Build nv-codec-headers
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch "${NV_CODEC_HEADERS_REF}" https://github.com/FFmpeg/nv-codec-headers.git
+          make -C nv-codec-headers -j"$(nproc)"
+          sudo make -C nv-codec-headers install
+
+      - name: Build libvmaf with CUDA
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch "${VMAF_REF}" https://github.com/Netflix/vmaf.git
+          cd vmaf/libvmaf
+          meson setup build \
+            --buildtype=release \
+            --default-library=shared \
+            -Denable_cuda=true \
+            -Denable_float=true \
+            -Dbuilt_in_models=true \
+            -Denable_tests=false \
+            -Denable_docs=false \
+            -Denable_tools=false
+          ninja -C build -v
+          sudo ninja -C build install
+          sudo ldconfig
+          pkg-config --modversion libvmaf
+          test -f /usr/local/include/libvmaf/libvmaf_cuda.h
+
+      - name: Build FFmpeg with libvmaf_cuda
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch "${FFMPEG_REF}" https://github.com/FFmpeg/FFmpeg.git
+          cd FFmpeg
+          ./configure \
+            --prefix="${FFMPEG_PREFIX}" \
+            --enable-gpl \
+            --enable-nonfree \
+            --enable-ffnvcodec \
+            --enable-cuda-nvcc \
+            --enable-libvmaf \
+            --enable-nvenc \
+            --enable-cuvid \
+            --extra-cflags="-I/usr/local/include -I/usr/local/cuda/include" \
+            --extra-ldflags="-L/usr/local/lib -L/usr/local/lib/x86_64-linux-gnu -L/usr/local/cuda/lib64 -Wl,-rpath,\$ORIGIN/../lib"
+          grep -E 'libvmaf|libvmaf_cuda|ffnvcodec|cuda_nvcc' config.log ffbuild/config.mak || true
+          make -j"$(nproc)"
+          make install
+
+      - name: Package Ubuntu artifact
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p "${FFMPEG_PREFIX}/lib"
+          cp -a /usr/local/lib/libvmaf.so* "${FFMPEG_PREFIX}/lib/" 2>/dev/null || true
+          cp -a /usr/local/lib/x86_64-linux-gnu/libvmaf.so* "${FFMPEG_PREFIX}/lib/" 2>/dev/null || true
+          "${FFMPEG_PREFIX}/bin/ffmpeg" -hide_banner -buildconf | tee "${FFMPEG_PREFIX}/buildconf.txt"
+          "${FFMPEG_PREFIX}/bin/ffmpeg" -hide_banner -filters | tee "${FFMPEG_PREFIX}/filters.txt"
+          grep -q 'libvmaf_cuda' "${FFMPEG_PREFIX}/filters.txt"
+          tar -C "${FFMPEG_PREFIX}" -czf "${{ github.workspace }}/ffmpeg-ubuntu-vmaf-cuda.tar.gz" .
+
+      - name: Upload Ubuntu artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-ubuntu-vmaf-cuda
+          path: ffmpeg-ubuntu-vmaf-cuda.tar.gz
+          if-no-files-found: error
+
+  windows-build:
+    name: Windows build
+    runs-on: windows-2022
+    timeout-minutes: 240
+    env:
+      CUDA_VERSION: ${{ inputs.windows_cuda_version || '12.8.1' }}
+      VMAF_PREFIX: C:\vmaf-install
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.24
+        with:
+          cuda: ${{ env.CUDA_VERSION }}
+          method: network
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          path-type: inherit
+          install: >-
+            base-devel
+            git
+            make
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-meson
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-yasm
+
+      - name: Verify toolchain
+        run: |
+          set -euxo pipefail
+          command -v cl || true
+          command -v nvcc
+          command -v gcc
+          command -v meson
+          command -v ninja
+          nvcc --version
+          gcc --version
+
+      - name: Build nv-codec-headers
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch "${NV_CODEC_HEADERS_REF}" https://github.com/FFmpeg/nv-codec-headers.git
+          make -C nv-codec-headers -j"$(nproc)"
+          make -C nv-codec-headers PREFIX=/mingw64 install
+          test -f /mingw64/include/ffnvcodec/dynlink_cuda.h
+          test -f /mingw64/lib/pkgconfig/ffnvcodec.pc
+
+      - name: Patch and build libvmaf with CUDA
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch "${VMAF_REF}" https://github.com/Netflix/vmaf.git
+          cd vmaf
+
+          find libvmaf/src/cuda -type f \( -name '*.c' -o -name '*.h' -o -name '*.cu' -o -name '*.cuh' \) \
+            -exec sed -i 's/#include <pthread.h>/#include "pthread.h"/g' {} +
+
+          for header in pthread.h pthread_compat.h pthread_signal.h pthread_time.h pthread_unistd.h sched.h; do
+            cp "/mingw64/include/${header}" libvmaf/src/cuda/
+          done
+
+          cp -a /mingw64/include/ffnvcodec libvmaf/src/
+
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('libvmaf/src/feature/integer_adm.h')
+          text = path.read_text()
+          old = '''static const struct dwt_model_params dwt_7_9_YCbCr_threshold[3] = {
+              {.a = 0.495, .k = 0.466, .f0 = 0.401, .g = {1.501, 1.0, 0.534, 1.0}},
+              {.a = 1.633, .k = 0.353, .f0 = 0.209, .g = {1.520, 1.0, 0.502, 1.0}},
+              {.a = 0.944, .k = 0.521, .f0 = 0.404, .g = {1.868, 1.0, 0.516, 1.0}}};'''
+          new = '''static const struct dwt_model_params dwt_7_9_YCbCr_threshold[3] = {
+              {0.495, 0.466, 0.401, {1.501, 1.0, 0.534, 1.0}},
+              {1.633, 0.353, 0.209, {1.520, 1.0, 0.502, 1.0}},
+              {0.944, 0.521, 0.404, {1.868, 1.0, 0.516, 1.0}}};'''
+          if old in text:
+              path.write_text(text.replace(old, new))
+          PY
+
+          vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
+          mkdir -p "${vmaf_prefix}"
+          cd libvmaf
+          meson setup build \
+            --buildtype=release \
+            --default-library=shared \
+            -Denable_cuda=true \
+            -Denable_float=true \
+            -Dbuilt_in_models=true \
+            -Denable_tests=false \
+            -Denable_docs=false \
+            -Denable_tools=false \
+            --prefix="${vmaf_prefix}"
+          ninja -C build -v
+          ninja -C build install
+          test -f "${vmaf_prefix}/include/libvmaf/libvmaf_cuda.h"
+          test -f "${vmaf_prefix}/lib/pkgconfig/libvmaf.pc"
+
+      - name: Build FFmpeg with libvmaf_cuda
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch "${FFMPEG_REF}" https://github.com/FFmpeg/FFmpeg.git
+          cd FFmpeg
+          cuda_path_unix="$(cygpath -u "${CUDA_PATH}")"
+          vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
+          ffmpeg_prefix="${PWD}/ffmpeg-install"
+          export PKG_CONFIG_PATH="${vmaf_prefix}/lib/pkgconfig:/mingw64/lib/pkgconfig"
+          export PATH="${vmaf_prefix}/bin:${cuda_path_unix}/bin:${PATH}"
+          unset LDFLAGS
+          export LDFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong -O2 -pipe -D__USE_MINGW_ANSI_STDIO=1"
+          ./configure \
+            --prefix="${ffmpeg_prefix}" \
+            --enable-gpl \
+            --enable-nonfree \
+            --enable-ffnvcodec \
+            --enable-libvmaf \
+            --enable-cuda-nvcc \
+            --enable-nvenc \
+            --enable-shared \
+            --disable-static \
+            --disable-vulkan \
+            --extra-cflags="-I${vmaf_prefix}/include -I${cuda_path_unix}/include" \
+            --extra-ldflags="-L${vmaf_prefix}/lib -L${cuda_path_unix}/lib/x64 -Wl,--allow-multiple-definition"
+          grep -E 'libvmaf|libvmaf_cuda|ffnvcodec|cuda_nvcc' config.log ffbuild/config.mak || true
+          make -j"$(nproc)"
+          make install
+
+      - name: Package Windows artifact
+        run: |
+          set -euxo pipefail
+          ffmpeg_prefix="${PWD}/FFmpeg/ffmpeg-install"
+          cuda_path_unix="$(cygpath -u "${CUDA_PATH}")"
+          vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
+          mkdir -p "${ffmpeg_prefix}/bin"
+          cp -a "${vmaf_prefix}"/bin/*.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
+          cp -a /mingw64/bin/libgcc_s_seh-1.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
+          cp -a /mingw64/bin/libstdc++-6.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
+          cp -a /mingw64/bin/libwinpthread-1.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
+          cp -a "${cuda_path_unix}"/bin/cudart64_*.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
+          "${ffmpeg_prefix}/bin/ffmpeg.exe" -hide_banner -buildconf | tee "${ffmpeg_prefix}/buildconf.txt"
+          "${ffmpeg_prefix}/bin/ffmpeg.exe" -hide_banner -filters | tee "${ffmpeg_prefix}/filters.txt"
+          grep -q 'libvmaf_cuda' "${ffmpeg_prefix}/filters.txt"
+          tar -C "${ffmpeg_prefix}" -czf "${GITHUB_WORKSPACE}/ffmpeg-windows-vmaf-cuda.tar.gz" .
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-windows-vmaf-cuda
+          path: ffmpeg-windows-vmaf-cuda.tar.gz
+          if-no-files-found: error
