@@ -133,6 +133,11 @@ jobs:
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           mkdir -p "${vmaf_prefix}"
           cd libvmaf
+          mingw_include_win="$(cygpath -w /mingw64/include)"
+          libvmaf_src_win="$(cygpath -w "${PWD}/src")"
+          libvmaf_cuda_src_win="$(cygpath -w "${PWD}/src/cuda")"
+          export INCLUDE="${mingw_include_win};${libvmaf_src_win};${libvmaf_cuda_src_win};${INCLUDE:-}"
+          export CL="/I${mingw_include_win} /I${libvmaf_src_win} /I${libvmaf_cuda_src_win} ${CL:-}"
           command -v link
           where.exe link
           meson setup build \
