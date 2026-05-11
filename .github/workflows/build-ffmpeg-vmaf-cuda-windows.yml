@@ -114,6 +114,8 @@ jobs:
           done
 
           cp -a /mingw64/include/ffnvcodec libvmaf/src/
+          mkdir -p compat-include
+          cp -a /mingw64/include/ffnvcodec compat-include/
 
           python - <<'PY'
           from pathlib import Path
@@ -134,11 +136,9 @@ jobs:
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           mkdir -p "${vmaf_prefix}"
           cd libvmaf
-          mingw_include_win="$(cygpath -w /mingw64/include)"
-          libvmaf_src_win="$(cygpath -w "${PWD}/src")"
-          libvmaf_cuda_src_win="$(cygpath -w "${PWD}/src/cuda")"
-          export INCLUDE="${mingw_include_win};${libvmaf_src_win};${libvmaf_cuda_src_win};${INCLUDE:-}"
-          export CL="/I${mingw_include_win} /I${libvmaf_src_win} /I${libvmaf_cuda_src_win} ${CL:-}"
+          compat_include_win="$(cygpath -w ../compat-include)"
+          export INCLUDE="${compat_include_win};${INCLUDE:-}"
+          unset CL
           cuda_host_compiler="$(cygpath -m "${msvc_bin_dir}/cl.exe")"
           cuda_nvcc="$(cygpath -m "${cuda_path_unix}/bin/nvcc.exe")"
           export CUDAHOSTCXX="${cuda_host_compiler}"
