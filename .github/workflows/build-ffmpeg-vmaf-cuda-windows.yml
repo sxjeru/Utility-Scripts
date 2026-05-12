@@ -178,6 +178,15 @@ jobs:
                   raise SystemExit(f'patch target not found: {old!r}')
               return text.replace(old, new, 1)
 
+          header_path = Path('libvmaf/src/feature/mkdirp.h')
+          header_text = header_path.read_text()
+          header_text = replace_once(
+              header_text,
+              '#include <sys/stat.h>',
+              '#include <sys/stat.h>\n#ifdef _WIN32\ntypedef int mode_t;\n#endif',
+          )
+          header_path.write_text(header_text)
+
           path = Path('libvmaf/src/feature/mkdirp.c')
           text = path.read_text()
           text = replace_once(
