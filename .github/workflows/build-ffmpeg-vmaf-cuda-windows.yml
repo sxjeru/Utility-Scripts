@@ -142,13 +142,20 @@ jobs:
               path.write_text(text.replace(old, new))
           PY
 
-          python - <<'PY'
-          from pathlib import Path
+            python - <<'PY'
+            from pathlib import Path
+            import re
 
           def replace_once(text, old, new):
               if old not in text:
                   raise SystemExit(f'patch target not found: {old!r}')
               return text.replace(old, new, 1)
+
+            def replace_regex_once(text, pattern, replacement, error):
+              text, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+              if count != 1:
+                raise SystemExit(f'patch target not found: {error}')
+              return text
 
           path = Path('libvmaf/src/meson.build')
           text = path.read_text()
@@ -248,11 +255,18 @@ jobs:
 
           python - <<'PY'
           from pathlib import Path
+          import re
 
           def replace_once(text, old, new):
               if old not in text:
                   raise SystemExit(f'patch target not found: {old!r}')
               return text.replace(old, new, 1)
+
+          def replace_regex_once(text, pattern, replacement, error):
+              text, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f'patch target not found: {error}')
+              return text
 
           path = Path('libvmaf/src/read_json_model.c')
           text = path.read_text()
@@ -266,10 +280,11 @@ jobs:
               '        snprintf(generated_key, generated_key_sz, "%d", i);',
               '        snprintf(generated_key, sizeof(generated_key), "%d", i);',
           )
-          text = replace_once(
+          text = replace_regex_once(
               text,
-              '            sprintf((char*)c.name, "%s_%04d",\n                    name, ++i);',
-              '            snprintf((char*)c.name, cfg_name_sz, "%s_%04d",\n                     name, ++i);',
+              r'\n\s*sprintf\(\(char\*\)c\.name,\s*"%s_%04d",\s*name,\s*\+\+i\);',
+              '\n            snprintf((char*)c.name, cfg_name_sz, "%s_%04d",\n                     name, ++i);',
+              'c.name sprintf',
           )
           text = replace_once(
               text,
