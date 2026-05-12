@@ -433,7 +433,7 @@ jobs:
             --vsenv \
             --native-file meson-cuda.ini \
             --buildtype=release \
-            --default-library=shared \
+            --default-library=static \
             -Dc_args=-D_USE_MATH_DEFINES \
             -Db_staticpic=false \
             -Denable_asm=false \
@@ -451,32 +451,16 @@ jobs:
             \) 2>/dev/null | head -n1)"
             if [ -n "${found_lib}" ]; then
               echo "Found vmaf import library: ${found_lib}"
+              if [ "${found_lib}" != "build/src/vmaf.lib" ]; then
+                cp "${found_lib}" build/src/vmaf.lib
+              fi
               cp "${found_lib}" src/vmaf.lib
             else
-              echo 'Import library not found, generating from vmaf.dll...'
-              python - <<'PY'
-          import subprocess, re, sys
-          dll_path = 'build/src/vmaf.dll'
-          result = subprocess.run(['dumpbin', '/NOLOGO', '/EXPORTS', dll_path],
-                                  capture_output=True, text=True)
-          if result.returncode != 0:
-              print(result.stderr, file=sys.stderr)
-              sys.exit(1)
-          exports = []
-          for line in result.stdout.splitlines():
-              m = re.match(r'^\s+\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\S+)', line)
-              if m:
-                  exports.append(m.group(1))
-          if not exports:
-              print('No exports found in ' + dll_path, file=sys.stderr)
-              sys.exit(1)
-          print(f'Found {len(exports)} exports')
-          with open('vmaf.def', 'w') as f:
-              f.write('LIBRARY vmaf\nEXPORTS\n')
-              for name in exports:
-                  f.write(f'  {name}\n')
-          PY
-              lib /DEF:vmaf.def /OUT:build/src/vmaf.lib /MACHINE:X64 /NOLOGO
+              echo 'vmaf import/static library not found after meson build; check the libvmaf Windows build configuration' >&2
+              find build src -maxdepth 3 -type f \( \
+                -name 'vmaf*' -o -name 'libvmaf*' \
+              \) 2>/dev/null | sed 's/^/  /' >&2 || true
+              exit 1
             fi
           fi
           test -f build/src/vmaf.lib
