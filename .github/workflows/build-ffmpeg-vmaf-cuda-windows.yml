@@ -133,6 +133,22 @@ jobs:
               path.write_text(text.replace(old, new))
           PY
 
+            python - <<'PY'
+            from pathlib import Path
+            path = Path('libvmaf/src/meson.build')
+            text = path.read_text()
+            old = """        if cuda_compiler.version().version_compare('<13')
+            gencode += '-gencode=arch=compute_50,code=compute_50'
+          endif
+      """
+            new = """        if cuda_compiler.version().version_compare('<13') and cuda_compiler.version().version_compare('<12.8')
+            gencode += '-gencode=arch=compute_50,code=compute_50'
+          endif
+      """
+            if old in text:
+              path.write_text(text.replace(old, new))
+            PY
+
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           mkdir -p "${vmaf_prefix}"
           cd libvmaf
@@ -142,12 +158,14 @@ jobs:
           cuda_host_compiler="$(cygpath -m "${msvc_bin_dir}/cl.exe")"
           cuda_nvcc="$(cygpath -m "${cuda_path_unix}/bin/nvcc.exe")"
           export CUDAHOSTCXX="${cuda_host_compiler}"
+          export NVCC_CCBIN="${cuda_host_compiler}"
+          export NVCC_PREPEND_FLAGS="-allow-unsupported-compiler -diag-suppress=108 --Wno-deprecated-gpu-targets"
           export PATH="${cuda_path_unix}/bin:${PATH}"
           cat > meson-cuda.ini <<EOF
           [binaries]
           c = 'cl'
           cpp = 'cl'
-          cuda = ['${cuda_nvcc}', '-allow-unsupported-compiler', '-ccbin', '${cuda_host_compiler}']
+          cuda = '${cuda_nvcc}'
           EOF
           command -v link
           where.exe link
