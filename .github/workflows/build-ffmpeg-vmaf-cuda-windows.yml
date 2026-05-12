@@ -159,11 +159,14 @@ jobs:
               "        c_args : vmaf_cflags_common,\n        cuda_args: cuda_flags",
               "        dependencies : [stdatomic_dependency],\n        c_args : vmaf_cflags_common,\n        cuda_args: cuda_flags",
           )
-          text = replace_once(
-              text,
-              "            include_directories('../src/cuda/'),\n            cuda_inc,",
-              "            include_directories('../src/cuda/'),\n            include_directories('../src/feature/'),\n            cuda_inc,",
-          )
+          path.write_text(text)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('libvmaf/src/compat/msvc/stdatomic.h')
+          text = path.read_text()
+          text = text.replace('#include "common/attributes.h"\n', '')
           path.write_text(text)
           PY
 
