@@ -183,7 +183,7 @@ jobs:
           header_text = replace_once(
               header_text,
               '#include <sys/stat.h>',
-              '#include <sys/stat.h>\n#ifdef _WIN32\ntypedef int mode_t;\n#endif',
+              '#include <sys/stat.h>\n#ifdef _WIN32\n#include "pthread_compat.h"\n#endif',
           )
           header_path.write_text(header_text)
 
