@@ -178,6 +178,25 @@ jobs:
                   raise SystemExit(f'patch target not found: {old!r}')
               return text.replace(old, new, 1)
 
+          path = Path('libvmaf/src/feature/barten_csf_tools.h')
+          text = path.read_text()
+          if '#ifndef M_PI' not in text:
+              text = replace_once(
+                  text,
+                  '#pragma once\n\n#ifndef BARTEN_CSF_TOOLS_H_\n',
+                  '#pragma once\n\n#ifndef M_PI\n#define M_PI 3.14159265358979323846264338327\n#endif\n\n#ifndef BARTEN_CSF_TOOLS_H_\n',
+              )
+              path.write_text(text)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new):
+              if old not in text:
+                  raise SystemExit(f'patch target not found: {old!r}')
+              return text.replace(old, new, 1)
+
           path = Path('libvmaf/src/feature/integer_vif.c')
           text = path.read_text()
           text = replace_once(
