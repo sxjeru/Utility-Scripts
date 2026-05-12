@@ -1,0 +1,116 @@
+name: build-ffmpeg-windows
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      ffmpeg_ref:
+        description: FFmpeg git ref to build
+        required: false
+        default: master
+      ffmpeg_patch:
+        description: Optional inline patch content for FFmpeg (paste git diff / unified diff)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  FFMPEG_REF: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ffmpeg_ref || 'master' }}
+  FFMPEG_PATCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ffmpeg_patch || '' }}
+
+jobs:
+  windows-build:
+    name: Windows build
+    runs-on: windows-2022
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          path-type: inherit
+          install: >-
+            base-devel
+            git
+            make
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-yasm
+
+      - name: Verify toolchain
+        run: |
+          set -euxo pipefail
+          command -v gcc
+          command -v git
+          command -v make
+          command -v nasm
+          command -v pkg-config
+          command -v yasm
+          gcc --version
+
+      - name: Clone FFmpeg
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch "${FFMPEG_REF}" https://github.com/FFmpeg/FFmpeg.git
+
+      - name: Apply optional FFmpeg patch
+        if: ${{ env.FFMPEG_PATCH != '' }}
+        run: |
+          set -euxo pipefail
+          cd FFmpeg
+          printf '%s' "$FFMPEG_PATCH" > custom.patch
+          git apply --check custom.patch
+          git apply --whitespace=nowarn custom.patch
+          git diff --stat
+
+      - name: Build FFmpeg
+        run: |
+          set -euxo pipefail
+          cd FFmpeg
+          ffmpeg_prefix="${PWD}/ffmpeg-install"
+          export PKG_CONFIG_PATH="/mingw64/lib/pkgconfig"
+          export CFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong -O2 -pipe -D__USE_MINGW_ANSI_STDIO=1"
+          export LDFLAGS="-static-libgcc"
+          ./configure \
+            --prefix="${ffmpeg_prefix}" \
+            --target-os=mingw32 \
+            --arch=x86_64 \
+            --pkg-config=pkg-config \
+            --pkg-config-flags=--static \
+            --disable-autodetect \
+            --disable-debug \
+            --disable-doc \
+            --disable-ffplay \
+            --disable-ffprobe \
+            --enable-static \
+            --disable-shared
+          make -j"$(nproc)"
+          make install
+
+      - name: Collect build artifact
+        run: |
+          set -euxo pipefail
+          ffmpeg_prefix="${PWD}/FFmpeg/ffmpeg-install"
+          artifact_dir="${PWD}/artifact"
+          mkdir -p "${artifact_dir}"
+          cp -f "${ffmpeg_prefix}/bin/ffmpeg.exe" "${artifact_dir}/ffmpeg.exe"
+          "${artifact_dir}/ffmpeg.exe" -hide_banner -buildconf | tee "${artifact_dir}/buildconf.txt"
+          "${artifact_dir}/ffmpeg.exe" -hide_banner -filters | tee "${artifact_dir}/filters.txt"
+          grep -E '\b(psnr|ssim|xpsnr)\b' "${artifact_dir}/filters.txt"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-windows
+          path: artifact
+          if-no-files-found: error
