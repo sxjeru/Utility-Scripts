@@ -420,9 +420,9 @@ jobs:
           export NVCC_CCBIN="${cuda_host_compiler}"
           export NVCC_PREPEND_FLAGS="-allow-unsupported-compiler -diag-suppress=108 --Wno-deprecated-gpu-targets"
           export PATH="${cuda_path_unix}/bin:${PATH}"
-          export CFLAGS="/GS- -D_USE_MATH_DEFINES"
-          export CXXFLAGS="/GS-"
-          export NVCC_PREPEND_FLAGS="${NVCC_PREPEND_FLAGS} -Xcompiler=/GS-"
+          export CFLAGS="-GS- -D_USE_MATH_DEFINES"
+          export CXXFLAGS="-GS-"
+          export NVCC_PREPEND_FLAGS="${NVCC_PREPEND_FLAGS} -Xcompiler=-GS-"
           cat > meson-cuda.ini <<EOF
           [binaries]
           c = 'cl'
