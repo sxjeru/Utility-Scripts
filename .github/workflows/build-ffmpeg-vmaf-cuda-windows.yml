@@ -467,6 +467,15 @@ jobs:
           ninja -C build install
           mkdir -p "${vmaf_prefix}/lib"
           cp build/src/vmaf.lib "${vmaf_prefix}/lib/"
+
+          if [ -f "${vmaf_prefix}/lib/vmaf.lib" ] && [ ! -f "${vmaf_prefix}/lib/libvmaf.a" ]; then
+          cp "${vmaf_prefix}/lib/vmaf.lib" "${vmaf_prefix}/lib/libvmaf.a"
+          fi
+
+          if [ -f build/src/vmaf.lib ] && [ ! -f "${vmaf_prefix}/lib/libvmaf.a" ]; then
+          cp build/src/vmaf.lib "${vmaf_prefix}/lib/libvmaf.a"
+          fi
+          
           test -f "${vmaf_prefix}/include/libvmaf/libvmaf_cuda.h"
           test -f "${vmaf_prefix}/lib/pkgconfig/libvmaf.pc"
 
@@ -500,8 +509,10 @@ jobs:
             --disable-ffprobe \
             --disable-doc \
             --disable-debug \
+            --pkg-config-flags="--static" \
             --extra-cflags="-I${vmaf_prefix}/include -I${cuda_path_safe}/include" \
-            --extra-ldflags="-L${vmaf_prefix}/lib -L${cuda_path_safe}/lib/x64 -Wl,--allow-multiple-definition"
+            --extra-ldflags="-L${vmaf_prefix}/lib -L${cuda_path_safe}/lib/x64 -Wl,--allow-multiple-definition" \
+            --extra-libs="-lstdc++ -lwinpthread"
           grep -E 'libvmaf|libvmaf_cuda|ffnvcodec|cuda_nvcc' config.log ffbuild/config.mak || true
           make -j"$(nproc)"
           make install
