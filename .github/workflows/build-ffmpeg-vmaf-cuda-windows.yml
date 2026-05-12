@@ -453,16 +453,36 @@ jobs:
               echo "Found vmaf import library: ${found_lib}"
               cp "${found_lib}" src/vmaf.lib
             else
-              echo 'vmaf import library not found in build or src' >&2
-              echo '--- build/src contents ---' >&2
-              ls -la build/src/ >&2 || true
-              echo '--- find debug ---' >&2
-              find build -maxdepth 4 -type f -name '*.lib' -o -name '*.a' >&2 || true
-              exit 1
+              echo 'Import library not found, generating from vmaf.dll...'
+              python - <<'PY'
+          import subprocess, re, sys
+          dll_path = 'build/src/vmaf.dll'
+          result = subprocess.run(['dumpbin', '/NOLOGO', '/EXPORTS', dll_path],
+                                  capture_output=True, text=True)
+          if result.returncode != 0:
+              print(result.stderr, file=sys.stderr)
+              sys.exit(1)
+          exports = []
+          for line in result.stdout.splitlines():
+              m = re.match(r'^\s+\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\S+)', line)
+              if m:
+                  exports.append(m.group(1))
+          if not exports:
+              print('No exports found in ' + dll_path, file=sys.stderr)
+              sys.exit(1)
+          print(f'Found {len(exports)} exports')
+          with open('vmaf.def', 'w') as f:
+              f.write('LIBRARY vmaf\nEXPORTS\n')
+              for name in exports:
+                  f.write(f'  {name}\n')
+          PY
+              lib /DEF:vmaf.def /OUT:build/src/vmaf.lib /MACHINE:X64 /NOLOGO
             fi
           fi
-          test -f src/vmaf.lib
+          test -f build/src/vmaf.lib
           ninja -C build install
+          mkdir -p "${vmaf_prefix}/lib"
+          cp build/src/vmaf.lib "${vmaf_prefix}/lib/"
           test -f "${vmaf_prefix}/include/libvmaf/libvmaf_cuda.h"
           test -f "${vmaf_prefix}/lib/pkgconfig/libvmaf.pc"
 
