@@ -150,6 +150,34 @@ jobs:
               path.write_text(text.replace(old, new))
           PY
 
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('libvmaf/src/meson.build')
+          text = path.read_text()
+          old = """            if cuda_compiler.version().version_compare('>12.8')
+                gencode += [
+                    '-gencode=arch=compute_100,code=sm_100',
+                    '-gencode=arch=compute_120,code=sm_120',
+                    '-gencode=arch=compute_120,code=compute_120'
+                ]
+            else
+                gencode += '-gencode=arch=compute_90,code=compute_90'
+            endif
+          """
+          new = """            if cuda_compiler.version().version_compare('>=13')
+                gencode += [
+                    '-gencode=arch=compute_100,code=sm_100',
+                    '-gencode=arch=compute_120,code=sm_120',
+                    '-gencode=arch=compute_120,code=compute_120'
+                ]
+            else
+                gencode += '-gencode=arch=compute_90,code=compute_90'
+            endif
+          """
+          if old in text:
+              path.write_text(text.replace(old, new))
+          PY
+
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           mkdir -p "${vmaf_prefix}"
           cd libvmaf
