@@ -54,6 +54,7 @@ jobs:
           command -v git
           command -v make
           command -v nasm
+          command -v objdump
           command -v pkg-config
           command -v yasm
           gcc --version
@@ -106,6 +107,30 @@ jobs:
           make -j"$(nproc)"
           make install
 
+      - name: Check runtime DLL dependencies
+        run: |
+          set -euxo pipefail
+          ffmpeg_exe="${PWD}/FFmpeg/ffmpeg-install/bin/ffmpeg.exe"
+          dep_list="${PWD}/ffmpeg-runtime-dependencies.txt"
+          : > "${dep_list}"
+
+          while IFS= read -r dll_name; do
+            [[ -n "${dll_name}" ]] || continue
+
+            dll_source="/mingw64/bin/${dll_name}"
+
+            if [[ -f "${dll_source}" ]]; then
+              printf '%s => %s\n' "${dll_name}" "${dll_source}" | tee -a "${dep_list}"
+            else
+              printf '%s => not found\n' "${dll_name}" | tee -a "${dep_list}"
+            fi
+          done < <(objdump -p "${ffmpeg_exe}" | awk '/DLL Name:/ {print $3}' | sort -u)
+
+          if grep -Fq '=> not found' "${dep_list}"; then
+            echo 'Missing runtime DLL dependency detected.' >&2
+            exit 1
+          fi
+
       - name: Collect build artifact
         run: |
           set -euxo pipefail
@@ -113,9 +138,46 @@ jobs:
           artifact_dir="${PWD}/artifact"
           mkdir -p "${artifact_dir}"
           cp -f "${ffmpeg_prefix}/bin/ffmpeg.exe" "${artifact_dir}/ffmpeg.exe"
+          cp -f "${PWD}/ffmpeg-runtime-dependencies.txt" "${artifact_dir}/runtime-dependencies.txt"
+
+          queue="${artifact_dir}/.dll-queue.txt"
+          seen="${artifact_dir}/.dll-seen.txt"
+          : > "${queue}"
+          : > "${seen}"
+          printf '%s\n' "${artifact_dir}/ffmpeg.exe" >> "${queue}"
+
+          while IFS= read -r binary_path || [[ -n "${binary_path}" ]]; do
+            [[ -n "${binary_path}" ]] || continue
+
+            if grep -Fxq "${binary_path}" "${seen}"; then
+              continue
+            fi
+
+            printf '%s\n' "${binary_path}" >> "${seen}"
+
+            while IFS= read -r dll_name; do
+              [[ -n "${dll_name}" ]] || continue
+
+              dll_source="/mingw64/bin/${dll_name}"
+              dll_target="${artifact_dir}/${dll_name}"
+
+              if [[ ! -f "${dll_source}" ]]; then
+                continue
+              fi
+
+              if [[ ! -f "${dll_target}" ]]; then
+                cp -f "${dll_source}" "${dll_target}"
+                printf '%s\n' "${dll_target}" >> "${queue}"
+              fi
+            done < <(objdump -p "${binary_path}" | awk '/DLL Name:/ {print $3}')
+          done < "${queue}"
+
+          rm -f "${queue}" "${seen}"
+
           "${artifact_dir}/ffmpeg.exe" -hide_banner -buildconf | tee "${artifact_dir}/buildconf.txt"
           "${artifact_dir}/ffmpeg.exe" -hide_banner -filters | tee "${artifact_dir}/filters.txt"
           grep -E '\b(psnr|ssim|xpsnr)\b' "${artifact_dir}/filters.txt"
+          ls -1 "${artifact_dir}"
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4

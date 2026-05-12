@@ -107,11 +107,16 @@ jobs:
           export PATH="${msvc_bin_dir}:${PATH}"
           cuda_path_unix="$(cygpath -u "${CUDA_PATH}")"
 
-          find libvmaf/src/cuda -type f \( -name '*.c' -o -name '*.h' -o -name '*.cu' -o -name '*.cuh' \) \
-            -exec sed -i 's/#include <pthread.h>/#include "pthread.h"/g' {} +
+          for cuda_dir in libvmaf/src/cuda libvmaf/src/feature/cuda; do
+            [ -d "${cuda_dir}" ] || continue
+            find "${cuda_dir}" -type f \( -name '*.c' -o -name '*.h' -o -name '*.cu' -o -name '*.cuh' \) \
+              -exec sed -i \
+                -e 's/#include <pthread.h>/#include "pthread.h"/g' \
+                -e 's/#include <unistd.h>/#include "pthread_unistd.h"/g' {} +
 
-          for header in pthread.h pthread_compat.h pthread_signal.h pthread_time.h pthread_unistd.h sched.h; do
-            cp "/mingw64/include/${header}" libvmaf/src/cuda/
+            for header in pthread.h pthread_compat.h pthread_signal.h pthread_time.h pthread_unistd.h sched.h; do
+              cp "/mingw64/include/${header}" "${cuda_dir}/"
+            done
           done
 
           cp -a /mingw64/include/ffnvcodec libvmaf/src/
