@@ -178,6 +178,24 @@ jobs:
                   raise SystemExit(f'patch target not found: {old!r}')
               return text.replace(old, new, 1)
 
+          path = Path('libvmaf/src/feature/mkdirp.c')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              '#include <unistd.h>',
+              '#ifdef _WIN32\n#include <direct.h>\n#else\n#include <unistd.h>\n#endif',
+          )
+          path.write_text(text)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new):
+              if old not in text:
+                  raise SystemExit(f'patch target not found: {old!r}')
+              return text.replace(old, new, 1)
+
           path = Path('libvmaf/src/feature/integer_vif.c')
           text = path.read_text()
           text = replace_once(
