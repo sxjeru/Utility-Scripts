@@ -41,16 +41,21 @@ jobs:
           install: >-
             base-devel
             mingw-w64-x86_64-dav1d
-            git
-            make
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-ffnvcodec-headers
             mingw-w64-x86_64-fontconfig
             mingw-w64-x86_64-freetype
+            mingw-w64-x86_64-fribidi
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-ffnvcodec-headers
+            mingw-w64-x86_64-harfbuzz
+            mingw-w64-x86_64-lame
             mingw-w64-x86_64-libass
+            mingw-w64-x86_64-libsoxr
+            mingw-w64-x86_64-libvmaf
             mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-opus
             mingw-w64-x86_64-pkgconf
             mingw-w64-x86_64-yasm
+            mingw-w64-x86_64-zimg
 
       - name: Verify toolchain
         run: |
@@ -114,6 +119,13 @@ jobs:
             --enable-libass \
             --enable-libfontconfig \
             --enable-libfreetype \
+            --enable-libfribidi \
+            --enable-libharfbuzz \
+            --enable-libmp3lame \
+            --enable-libopus \
+            --enable-libsoxr \
+            --enable-libvmaf \
+            --enable-libzimg \
             --enable-nvdec \
             --enable-nvenc \
             --enable-static \
