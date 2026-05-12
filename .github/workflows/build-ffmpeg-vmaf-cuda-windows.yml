@@ -476,6 +476,7 @@ jobs:
           git clone --depth 1 --branch "${FFMPEG_REF}" https://github.com/FFmpeg/FFmpeg.git
           cd FFmpeg
           cuda_path_unix="$(cygpath -u "${CUDA_PATH}")"
+          cuda_path_safe="$(cygpath -m -s "${CUDA_PATH}")"
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           ffmpeg_prefix="${PWD}/ffmpeg-install"
           export PKG_CONFIG_PATH="${vmaf_prefix}/lib/pkgconfig:/mingw64/lib/pkgconfig"
@@ -499,8 +500,8 @@ jobs:
             --disable-ffprobe \
             --disable-doc \
             --disable-debug \
-            --extra-cflags="-I${vmaf_prefix}/include -I${cuda_path_unix}/include" \
-            --extra-ldflags="-L${vmaf_prefix}/lib -L${cuda_path_unix}/lib/x64 -Wl,--allow-multiple-definition"
+            --extra-cflags="-I${vmaf_prefix}/include -I${cuda_path_safe}/include" \
+            --extra-ldflags="-L${vmaf_prefix}/lib -L${cuda_path_safe}/lib/x64 -Wl,--allow-multiple-definition"
           grep -E 'libvmaf|libvmaf_cuda|ffnvcodec|cuda_nvcc' config.log ffbuild/config.mak || true
           make -j"$(nproc)"
           make install
