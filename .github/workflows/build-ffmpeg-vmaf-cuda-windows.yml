@@ -170,6 +170,29 @@ jobs:
           path.write_text(text)
           PY
 
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new):
+              if old not in text:
+                  raise SystemExit(f'patch target not found: {old!r}')
+              return text.replace(old, new, 1)
+
+          path = Path('libvmaf/src/feature/integer_vif.c')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              "    void *data = aligned_malloc(data_sz, MAX_ALIGN);\n    if (!data) return -ENOMEM;\n    memset(data, 0, data_sz);",
+              "    uint8_t *data = aligned_malloc(data_sz, MAX_ALIGN);\n    uint8_t *data_base = data;\n    if (!data) return -ENOMEM;\n    memset(data, 0, data_sz);",
+          )
+          text = replace_once(
+              text,
+              "    if (data) aligned_free(data);",
+              "    if (data_base) aligned_free(data_base);",
+          )
+          path.write_text(text)
+          PY
+
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           mkdir -p "${vmaf_prefix}"
           cd libvmaf
