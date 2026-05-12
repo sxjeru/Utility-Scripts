@@ -122,6 +122,9 @@ jobs:
           cp -a /mingw64/include/ffnvcodec libvmaf/src/
           mkdir -p compat-include
           cp -a /mingw64/include/ffnvcodec compat-include/
+          for header in pthread.h pthread_compat.h pthread_signal.h pthread_time.h pthread_unistd.h sched.h; do
+            cp "/mingw64/include/${header}" compat-include/
+          done
 
           python - <<'PY'
           from pathlib import Path

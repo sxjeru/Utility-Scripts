@@ -117,6 +117,13 @@ jobs:
           while IFS= read -r dll_name; do
             [[ -n "${dll_name}" ]] || continue
 
+            case "${dll_name,,}" in
+              avicap32.dll|bcrypt.dll|gdi32.dll|kernel32.dll|msvcrt.dll|ole32.dll|oleaut32.dll|shell32.dll|shlwapi.dll|user32.dll|ws2_32.dll)
+                printf '%s => system\n' "${dll_name}" | tee -a "${dep_list}"
+                continue
+                ;;
+            esac
+
             dll_source="/mingw64/bin/${dll_name}"
 
             if [[ -f "${dll_source}" ]]; then
