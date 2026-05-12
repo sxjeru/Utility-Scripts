@@ -446,12 +446,26 @@ jobs:
             --prefix="${vmaf_prefix}"
           ninja -C build -v
           if [ ! -f src/vmaf.lib ]; then
-            for candidate in src/vmaf.dll.lib src/vmaf.dll.a src/vmaf_imp.lib src/libvmaf.lib; do
+            for candidate in \
+              build/src/vmaf.dll.lib \
+              build/src/vmaf.dll.a \
+              build/src/vmaf_imp.lib \
+              build/src/libvmaf.lib \
+              build/src/vmaf.lib \
+              src/vmaf.dll.lib \
+              src/vmaf.dll.a \
+              src/vmaf_imp.lib \
+              src/libvmaf.lib; do
               if [ -f "${candidate}" ]; then
                 cp "${candidate}" src/vmaf.lib
                 break
               fi
             done
+            if [ ! -f src/vmaf.lib ]; then
+              echo 'vmaf import library not found in build/src or src' >&2
+              find build -maxdepth 3 -type f \( -name 'vmaf*.lib' -o -name 'libvmaf*.lib' -o -name 'vmaf*.a' \) >&2 || true
+              exit 1
+            fi
           fi
           test -f src/vmaf.lib
           ninja -C build install
