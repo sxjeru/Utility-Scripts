@@ -484,14 +484,50 @@ jobs:
           set -euxo pipefail
           git clone --depth 1 --branch "${FFMPEG_REF}" https://github.com/FFmpeg/FFmpeg.git
           cd FFmpeg
+
           cuda_path_unix="$(cygpath -u "${CUDA_PATH}")"
           cuda_path_safe="$(cygpath -m -s "${CUDA_PATH}")"
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           ffmpeg_prefix="${PWD}/ffmpeg-install"
+
           export PKG_CONFIG_PATH="${vmaf_prefix}/lib/pkgconfig:/mingw64/lib/pkgconfig"
           export PATH="${vmaf_prefix}/bin:${cuda_path_unix}/bin:${PATH}"
+
+          echo "==== libvmaf.pc ===="
+          cat "${vmaf_prefix}/lib/pkgconfig/libvmaf.pc"
+
+          echo "==== vmaf lib/bin files ===="
+          find "${vmaf_prefix}" -maxdepth 4 -type f \( \
+            -name '*vmaf*.dll' -o \
+            -name '*vmaf*.lib' -o \
+            -name '*vmaf*.a' -o \
+            -name 'libvmaf.pc' \
+          \) -print
+
+          echo "==== pkg-config libvmaf ===="
+          pkg-config --modversion libvmaf
+          pkg-config --cflags libvmaf
+          pkg-config --libs libvmaf
+          pkg-config --exists "libvmaf >= 2.0.0"
+
           unset LDFLAGS
-          export LDFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong -O2 -pipe -D__USE_MINGW_ANSI_STDIO=1"
+          export CFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong -O2 -pipe -D__USE_MINGW_ANSI_STDIO=1"
+          export CXXFLAGS="${CFLAGS}"
+
+          echo "==== manual libvmaf link probe ===="
+          cat > /tmp/test-vmaf.c <<'EOF'
+          #include <libvmaf/libvmaf.h>
+          int main(void) { return 0; }
+          EOF
+
+          gcc /tmp/test-vmaf.c \
+            $(pkg-config --cflags libvmaf) \
+            $(pkg-config --libs libvmaf) \
+            -L"${cuda_path_safe}/lib/x64" \
+            -lwinpthread \
+            -o /tmp/test-vmaf.exe \
+            -Wl,--allow-multiple-definition
+
           ./configure \
             --prefix="${ffmpeg_prefix}" \
             --enable-gpl \
@@ -509,10 +545,10 @@ jobs:
             --disable-ffprobe \
             --disable-doc \
             --disable-debug \
-            --pkg-config-flags="--static" \
             --extra-cflags="-I${vmaf_prefix}/include -I${cuda_path_safe}/include" \
             --extra-ldflags="-L${vmaf_prefix}/lib -L${cuda_path_safe}/lib/x64 -Wl,--allow-multiple-definition" \
-            --extra-libs="-lstdc++ -lwinpthread"
+            --extra-libs="-lwinpthread"
+
           grep -E 'libvmaf|libvmaf_cuda|ffnvcodec|cuda_nvcc' config.log ffbuild/config.mak || true
           make -j"$(nproc)"
           make install
