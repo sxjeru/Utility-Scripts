@@ -1,6 +1,7 @@
 name: build-ffmpeg-vmaf-cuda-windows
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       ffmpeg_ref:
@@ -133,21 +134,21 @@ jobs:
               path.write_text(text.replace(old, new))
           PY
 
-            python - <<'PY'
-            from pathlib import Path
-            path = Path('libvmaf/src/meson.build')
-            text = path.read_text()
-            old = """        if cuda_compiler.version().version_compare('<13')
-            gencode += '-gencode=arch=compute_50,code=compute_50'
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('libvmaf/src/meson.build')
+          text = path.read_text()
+          old = """        if cuda_compiler.version().version_compare('<13')
+              gencode += '-gencode=arch=compute_50,code=compute_50'
           endif
-      """
-            new = """        if cuda_compiler.version().version_compare('<13') and cuda_compiler.version().version_compare('<12.8')
-            gencode += '-gencode=arch=compute_50,code=compute_50'
+          """
+          new = """        if cuda_compiler.version().version_compare('<13') and cuda_compiler.version().version_compare('<12.8')
+              gencode += '-gencode=arch=compute_50,code=compute_50'
           endif
-      """
-            if old in text:
+          """
+          if old in text:
               path.write_text(text.replace(old, new))
-            PY
+          PY
 
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           mkdir -p "${vmaf_prefix}"
