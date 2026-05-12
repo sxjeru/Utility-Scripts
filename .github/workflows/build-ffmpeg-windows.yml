@@ -63,6 +63,15 @@ jobs:
           set -euxo pipefail
           git clone --depth 1 --branch "${FFMPEG_REF}" https://github.com/FFmpeg/FFmpeg.git
 
+      - name: Apply built-in stats flush patch
+        run: |
+          set -euxo pipefail
+          cd FFmpeg
+          perl -0pi -e 's/fprintf\(s->stats_file, "\\n"\);\n    }/fprintf(s->stats_file, "\\n");\n        fflush(s->stats_file);\n    }/' libavfilter/vf_psnr.c
+          perl -0pi -e 's/fprintf\(s->stats_file, "All:%f \(%f\)\\n", ssimv, ssim_db\(ssimv, 1\.0\)\);\n    }/fprintf(s->stats_file, "All:%f (%f)\\n", ssimv, ssim_db(ssimv, 1.0));\n        fflush(s->stats_file);\n    }/' libavfilter/vf_ssim.c
+          perl -0pi -e 's/fprintf\(s->stats_file, "\\n"\);\n    }\n\n    return ff_filter_frame\(ctx->outputs\[0\], master\);/fprintf(s->stats_file, "\\n");\n        fflush(s->stats_file);\n    }\n\n    return ff_filter_frame(ctx->outputs[0], master);/' libavfilter/vf_xpsnr.c
+          git diff --stat
+
       - name: Apply optional FFmpeg patch
         if: ${{ env.FFMPEG_PATCH != '' }}
         run: |
