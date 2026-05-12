@@ -50,7 +50,7 @@ jobs:
             mingw-w64-x86_64-lame
             mingw-w64-x86_64-libass
             mingw-w64-x86_64-libsoxr
-            mingw-w64-x86_64-libvmaf
+            mingw-w64-x86_64-vmaf
             mingw-w64-x86_64-nasm
             mingw-w64-x86_64-opus
             mingw-w64-x86_64-pkgconf

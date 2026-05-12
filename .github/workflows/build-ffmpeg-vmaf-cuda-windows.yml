@@ -125,6 +125,15 @@ jobs:
           for header in pthread.h pthread_compat.h pthread_signal.h pthread_time.h pthread_unistd.h sched.h; do
             cp "/mingw64/include/${header}" compat-include/
           done
+          mkdir -p libvmaf/compat-lib
+          if [ -f /mingw64/lib/libwinpthread.dll.a ]; then
+            cp /mingw64/lib/libwinpthread.dll.a libvmaf/compat-lib/winpthread.lib
+          elif [ -f /mingw64/lib/libwinpthread.a ]; then
+            cp /mingw64/lib/libwinpthread.a libvmaf/compat-lib/winpthread.lib
+          else
+            echo 'winpthread import library not found' >&2
+            exit 1
+          fi
 
           python - <<'PY'
           from pathlib import Path
@@ -166,6 +175,16 @@ jobs:
               text,
               "        c_args : vmaf_cflags_common,\n        cuda_args: cuda_flags",
               "        dependencies : [stdatomic_dependency],\n        c_args : vmaf_cflags_common,\n        cuda_args: cuda_flags",
+          )
+          text = replace_once(
+              text,
+              "thread_lib = dependency('threads')\nmath_lib = cc.find_library('m', required : false)",
+              "thread_lib = dependency('threads')\nwinpthread_dependencies = []\nif host_machine.system() == 'windows' and cc.get_id() == 'msvc'\n    winpthread_path = meson.current_source_dir() / '../compat-lib'\n    winpthread_dependencies += cc.find_library('winpthread', dirs : [winpthread_path], required : true)\nendif\nmath_lib = cc.find_library('m', required : false)",
+          )
+          text = replace_once(
+              text,
+              "    dependencies : [\n      thread_lib,\n      math_lib,\n      stdatomic_dependency,\n      cuda_dependency,\n    ],",
+              "    dependencies : [\n      thread_lib,\n      math_lib,\n      stdatomic_dependency,\n      cuda_dependency,\n    ] + winpthread_dependencies,",
           )
           path.write_text(text)
           PY
@@ -242,6 +261,24 @@ jobs:
               text,
               '#include <stdarg.h>\n#include <unistd.h>',
               '#include <stdarg.h>\n#ifdef _WIN32\n#include <io.h>\n#define isatty _isatty\n#define fileno _fileno\n#else\n#include <unistd.h>\n#endif',
+          )
+          path.write_text(text)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new):
+              if old not in text:
+                  raise SystemExit(f'patch target not found: {old!r}')
+              return text.replace(old, new, 1)
+
+          path = Path('libvmaf/src/feature/integer_adm.c')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              '#include "integer_adm.h"\n#include "log.h"\n',
+              '#include "integer_adm.h"\n#include "log.h"\n\n#ifdef _MSC_VER\n#include <intrin.h>\nstatic inline int __builtin_clz(unsigned x) {\n    unsigned long index;\n    if (!x) return 32;\n    _BitScanReverse(&index, x);\n    return 31 - (int)index;\n}\n#endif\n',
           )
           path.write_text(text)
           PY
