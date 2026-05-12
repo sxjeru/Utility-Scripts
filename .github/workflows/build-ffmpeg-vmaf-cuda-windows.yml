@@ -228,6 +228,90 @@ jobs:
           path.write_text(text)
           PY
 
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('libvmaf/src/libvmaf.c')
+          text = path.read_text()
+
+          text, count = re.subn(
+              r"char name\[name_sz\];\n\s*memset\(name, 0,\s*name_sz\);",
+              "char *name = malloc(name_sz);\n    if (!name) return -ENOMEM;\n    memset(name, 0, name_sz);",
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('patch target not found: libvmaf name buffer')
+
+          text, count = re.subn(
+              r"(\s*err \|= vmaf_feature_score_pooled\(vmaf, name, pool_method,\n\s*&score->bootstrap\.ci\.p95\.hi,\n\s*index_low, index_high\);\n\n\s*return err;)",
+              "    err |= vmaf_feature_score_pooled(vmaf, name, pool_method,\n                                    &score->bootstrap.ci.p95.hi,\n                                    index_low, index_high);\n\n    free(name);\n    return err;",
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('patch target not found: libvmaf free(name)')
+
+          path.write_text(text)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('libvmaf/src/predict.c')
+          text = path.read_text()
+
+          func_pattern = re.compile(
+              r"static int vmaf_bootstrap_predict_score_at_index\(.*?\n\}",
+              re.S,
+          )
+          match = func_pattern.search(text)
+          if not match:
+              raise SystemExit('patch target not found: bootstrap function')
+
+          func = match.group(0)
+
+          func, count = re.subn(
+              r"double scores\[model_collection->cnt\];",
+              "double *scores = malloc(sizeof(*scores) * model_collection->cnt);\n    if (!scores) return -ENOMEM;",
+              func,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('patch target not found: predict scores buffer')
+
+          func, count = re.subn(
+              r"if \(err\) return err;",
+              "if (err) goto free_scores;",
+              func,
+              count=2,
+          )
+          if count != 2:
+              raise SystemExit('patch target not found: predict early returns')
+
+          func, count = re.subn(
+              r"char name\[name_sz\];\n\s*memset\(name, 0, name_sz\);",
+              "char *name = malloc(name_sz);\n    if (!name) {\n        err = -ENOMEM;\n        goto free_scores;\n    }\n    memset(name, 0, name_sz);",
+              func,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('patch target not found: predict name buffer')
+
+          func, count = re.subn(
+              r"\s*err \|= vmaf_feature_collector_append\(feature_collector, name,\n\s*score->bootstrap\.ci\.p95\.hi,\n\s*index\);\n\s*return err;",
+              "    err |= vmaf_feature_collector_append(feature_collector, name,\n                                         score->bootstrap.ci.p95.hi,\n                                         index);\n    free(name);\nfree_scores:\n    free(scores);\n    return err;",
+              func,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('patch target not found: predict cleanup')
+
+          path.write_text(text[:match.start()] + func + text[match.end():])
+          PY
+
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           mkdir -p "${vmaf_prefix}"
           cd libvmaf

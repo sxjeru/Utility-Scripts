@@ -43,6 +43,10 @@ jobs:
             git
             make
             mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-ffnvcodec-headers
+            mingw-w64-x86_64-fontconfig
+            mingw-w64-x86_64-freetype
+            mingw-w64-x86_64-libass
             mingw-w64-x86_64-nasm
             mingw-w64-x86_64-pkgconf
             mingw-w64-x86_64-yasm
@@ -97,11 +101,18 @@ jobs:
             --arch=x86_64 \
             --pkg-config=pkg-config \
             --pkg-config-flags=--static \
+            --enable-gpl \
             --disable-autodetect \
             --disable-debug \
             --disable-doc \
             --disable-ffplay \
             --disable-ffprobe \
+            --enable-cuvid \
+            --enable-ffnvcodec \
+            --enable-libass \
+            --enable-libfontconfig \
+            --enable-libfreetype \
+            --enable-nvenc \
             --enable-static \
             --disable-shared
           make -j"$(nproc)"
