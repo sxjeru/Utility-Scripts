@@ -436,7 +436,7 @@ jobs:
             --vsenv \
             --native-file meson-cuda.ini \
             --buildtype=release \
-            --default-library=static \
+            --default-library=shared \
             -Db_staticpic=false \
             -Denable_asm=false \
             -Denable_cuda=true \
@@ -566,6 +566,8 @@ jobs:
           grep -E 'libvmaf|libvmaf_cuda|ffnvcodec|cuda_nvcc' config.log ffbuild/config.mak || true
           make -j"$(nproc)"
           make install
+
+          cp /c/vmaf-install/bin/libvmaf-*.dll "${ffmpeg_prefix}/bin/"
 
       - name: Package Windows artifact
         run: |
