@@ -154,6 +154,11 @@ jobs:
               "cuda_compiler.version().version_compare('>12.8')",
               "cuda_compiler.version().version_compare('>=13')",
           )
+          text = replace_once(
+              text,
+              "        c_args : vmaf_cflags_common,\n        cuda_args: cuda_flags",
+              "        dependencies : [stdatomic_dependency],\n        c_args : vmaf_cflags_common,\n        cuda_args: cuda_flags",
+          )
           path.write_text(text)
           PY
 
