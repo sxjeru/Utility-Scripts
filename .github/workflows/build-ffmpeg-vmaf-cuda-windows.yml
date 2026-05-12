@@ -135,23 +135,45 @@ jobs:
           PY
 
           python - <<'PY'
+          import re
           from pathlib import Path
+
+          def replace_once(text, old, new):
+              if old not in text:
+                  raise SystemExit(f'patch target not found: {old!r}')
+              return text.replace(old, new, 1)
+
           path = Path('libvmaf/src/meson.build')
           text = path.read_text()
-          text = text.replace(
+          text = replace_once(
+              text,
               "cuda_compiler.version().version_compare('<13')",
               "cuda_compiler.version().version_compare('<13') and cuda_compiler.version().version_compare('<12.8')",
-              1,
           )
-          text = text.replace(
+          text = replace_once(
+              text,
               "cuda_compiler.version().version_compare('>12.8')",
               "cuda_compiler.version().version_compare('>=13')",
-              1,
           )
-          text = text.replace(
-              "c_args : ['-mavx', '-mavx2'] +\n            vmaf_cflags_common,",
-              "c_args : ['/arch:AVX2'] +\n            vmaf_cflags_common,",
-              1,
+          text, count = re.subn(
+              r"c_args\s*:\s*\['-mavx',\s*'-mavx2'\]\s*\+\s*vmaf_cflags_common,",
+              "c_args : ['/arch:AVX2'] + vmaf_cflags_common,",
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('patch target not found: x86_avx2 c_args')
+          path.write_text(text)
+
+          path = Path('libvmaf/src/feature/x86/motion_avx2.c')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              "    uint64_t r1 = final_accum[0] + final_accum[1] + final_accum[2] + final_accum[3];",
+              "    uint64_t final_accum_values[4];\n"
+              "    _mm256_storeu_si256((__m256i *)final_accum_values, final_accum);\n"
+              "    uint64_t r1 = final_accum_values[0] + final_accum_values[1] +\n"
+              "                  final_accum_values[2] + final_accum_values[3];",
           )
           path.write_text(text)
           PY
