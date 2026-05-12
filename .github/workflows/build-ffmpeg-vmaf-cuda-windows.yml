@@ -498,18 +498,8 @@ jobs:
           echo "==== original libvmaf.pc ===="
           cat "${pc}"
 
-          python - <<PY
-          from pathlib import Path
-          import re
-
-          pc = Path(r"${pc}")
-          text = pc.read_text()
-
-          text = re.sub(r"^prefix=.*$", "prefix=${vmaf_prefix}", text, flags=re.M)
-          text = re.sub(r"\s+[A-Za-z]:/[^ \n]*compat-lib/winpthread\.lib", " -lwinpthread", text)
-
-          pc.write_text(text)
-          PY
+          sed -i "s|^prefix=.*|prefix=${vmaf_prefix}|" "${pc}"
+          sed -i -E 's|[[:space:]][A-Za-z]:/[^[:space:]]*compat-lib/winpthread\.lib| -lwinpthread|g' "${pc}"
 
           echo "==== patched libvmaf.pc ===="
           cat "${pc}"
@@ -565,7 +555,11 @@ jobs:
             --disable-debug \
             --extra-cflags="-I${vmaf_prefix}/include -I${vmaf_prefix}/include/libvmaf -I${cuda_path_safe}/include" \
             --extra-ldflags="-L${vmaf_prefix}/lib -L${cuda_path_safe}/lib/x64 -Wl,--allow-multiple-definition" \
-            --extra-libs="-lwinpthread"
+            --extra-libs="-lwinpthread" || {
+              grep -A120 -B40 -i "vmaf" ffbuild/config.log || true
+              grep -A120 -B40 -i "vmaf_init" ffbuild/config.log || true
+              exit 1
+            }
 
           grep -E 'libvmaf|libvmaf_cuda|ffnvcodec|cuda_nvcc' config.log ffbuild/config.mak || true
           make -j"$(nproc)"
