@@ -230,6 +230,57 @@ jobs:
 
           python - <<'PY'
           from pathlib import Path
+
+          def replace_once(text, old, new):
+              if old not in text:
+                  raise SystemExit(f'patch target not found: {old!r}')
+              return text.replace(old, new, 1)
+
+          path = Path('libvmaf/src/log.c')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              '#include <stdarg.h>\n#include <unistd.h>',
+              '#include <stdarg.h>\n#ifdef _WIN32\n#include <io.h>\n#define isatty _isatty\n#define fileno _fileno\n#else\n#include <unistd.h>\n#endif',
+          )
+          path.write_text(text)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new):
+              if old not in text:
+                  raise SystemExit(f'patch target not found: {old!r}')
+              return text.replace(old, new, 1)
+
+          path = Path('libvmaf/src/read_json_model.c')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              '    const size_t cfg_name_sz = strlen(name) + 5 + 1;\n    char cfg_name[cfg_name_sz];\n\n    const size_t generated_key_sz = 4 + 1;\n    char generated_key[generated_key_sz];',
+              '    const size_t cfg_name_sz = strlen(name) + 5 + 1;\n    char *cfg_name = malloc(cfg_name_sz);\n    if (!cfg_name) {\n        free((char*)name);\n        return -ENOMEM;\n    }\n\n    char generated_key[5];',
+          )
+          text = replace_once(
+              text,
+              '        snprintf(generated_key, generated_key_sz, "%d", i);',
+              '        snprintf(generated_key, sizeof(generated_key), "%d", i);',
+          )
+          text = replace_once(
+              text,
+              '            sprintf((char*)c.name, "%s_%04d",\n                    name, ++i);',
+              '            snprintf((char*)c.name, cfg_name_sz, "%s_%04d",\n                     name, ++i);',
+          )
+          text = replace_once(
+              text,
+              '    free((char*)name);\n    if (!(*model_collection)) return -EINVAL;\n    return err;',
+              '    free(cfg_name);\n    free((char*)name);\n    if (!(*model_collection)) return -EINVAL;\n    return err;',
+          )
+          path.write_text(text)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
           import re
 
           path = Path('libvmaf/src/libvmaf.c')
