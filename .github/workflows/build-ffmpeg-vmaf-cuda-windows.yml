@@ -681,7 +681,6 @@ jobs:
             --disable-static \
             --disable-vulkan \
             --disable-ffplay \
-            --disable-ffprobe \
             --disable-doc \
             --disable-debug \
             --extra-cflags="-I${vmaf_prefix}/include -I${vmaf_prefix}/include/libvmaf -I${cuda_path_safe}/include" \
@@ -785,12 +784,36 @@ jobs:
           cuda_path_unix="$(cygpath -u "${CUDA_PATH}")"
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
           workspace_unix="$(cygpath -u "${GITHUB_WORKSPACE}")"
+
+          copy_mingw_runtime_deps() {
+            local dep
+            local -a deps=()
+            local -a targets=("$@")
+
+            for target in "${targets[@]}"; do
+              [ -f "${target}" ] || continue
+              while IFS= read -r dep; do
+                case "${dep}" in
+                  /mingw64/bin/*.dll) deps+=("${dep}") ;;
+                esac
+              done < <(ldd "${target}" 2>/dev/null | awk '/=> \// { print $3 } /^\/mingw64\/bin\/.*\.dll/ { print $1 }')
+            done
+
+            if [ ${#deps[@]} -gt 0 ]; then
+              printf '%s\n' "${deps[@]}" | sort -u | while IFS= read -r dep; do
+                cp -a "${dep}" "${ffmpeg_prefix}/bin/"
+              done
+            fi
+          }
+
           mkdir -p "${ffmpeg_prefix}/bin"
           cp -a "${vmaf_prefix}"/bin/*.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
           cp -a /mingw64/bin/libgcc_s_seh-1.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
           cp -a /mingw64/bin/libstdc++-6.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
           cp -a /mingw64/bin/libwinpthread-1.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
           cp -a "${cuda_path_unix}"/bin/cudart64_*.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
+          mapfile -t runtime_targets < <(find "${ffmpeg_prefix}/bin" -maxdepth 1 -type f \( -name '*.exe' -o -name '*.dll' \))
+          copy_mingw_runtime_deps "${runtime_targets[@]}"
           "${ffmpeg_prefix}/bin/ffmpeg.exe" -hide_banner -buildconf | tee "${ffmpeg_prefix}/buildconf.txt"
           "${ffmpeg_prefix}/bin/ffmpeg.exe" -hide_banner -filters | tee "${ffmpeg_prefix}/filters.txt"
           grep -q 'libvmaf_cuda' "${ffmpeg_prefix}/filters.txt"
