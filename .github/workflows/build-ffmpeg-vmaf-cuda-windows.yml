@@ -70,13 +70,19 @@ jobs:
             base-devel
             git
             make
+            mingw-w64-x86_64-fdk-aac
+            mingw-w64-x86_64-fontconfig
+            mingw-w64-x86_64-freetype
             mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-harfbuzz
+            mingw-w64-x86_64-libass
             mingw-w64-x86_64-meson
             mingw-w64-x86_64-nasm
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-pkgconf
             mingw-w64-x86_64-python
             mingw-w64-x86_64-yasm
+            mingw-w64-x86_64-zimg
 
       - name: Verify toolchain
         run: |
@@ -100,6 +106,20 @@ jobs:
           make -C nv-codec-headers PREFIX=/mingw64 install
           test -f /mingw64/include/ffnvcodec/dynlink_cuda.h
           test -f /mingw64/lib/pkgconfig/ffnvcodec.pc
+
+      - name: Clone FFmpeg
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch "${FFMPEG_REF}" https://github.com/FFmpeg/FFmpeg.git
+
+      - name: Apply built-in stats flush patch
+        run: |
+          set -euxo pipefail
+          cd FFmpeg
+          perl -0pi -e 's/fprintf\(s->stats_file, "\\n"\);\n    }/fprintf(s->stats_file, "\\n");\n        fflush(s->stats_file);\n    }/' libavfilter/vf_psnr.c
+          perl -0pi -e 's/fprintf\(s->stats_file, "All:%f \(%f\)\\n", ssimv, ssim_db\(ssimv, 1\.0\)\);\n    }/fprintf(s->stats_file, "All:%f (%f)\\n", ssimv, ssim_db(ssimv, 1.0));\n        fflush(s->stats_file);\n    }/' libavfilter/vf_ssim.c
+          perl -0pi -e 's/fprintf\(s->stats_file, "\\n"\);\n    }\n\n    return ff_filter_frame\(ctx->outputs\[0\], master\);/fprintf(s->stats_file, "\\n");\n        fflush(s->stats_file);\n    }\n\n    return ff_filter_frame(ctx->outputs[0], master);/' libavfilter/vf_xpsnr.c
+          git diff --stat
 
       - name: Patch and build libvmaf with CUDA
         run: |
@@ -588,7 +608,6 @@ jobs:
       - name: Build FFmpeg with libvmaf_cuda
         run: |
           set -euxo pipefail
-          git clone --depth 1 --branch "${FFMPEG_REF}" https://github.com/FFmpeg/FFmpeg.git
           cd FFmpeg
 
           cuda_path_unix="$(cygpath -u "${CUDA_PATH}")"
@@ -646,12 +665,19 @@ jobs:
             --prefix="${ffmpeg_prefix}" \
             --enable-gpl \
             --enable-nonfree \
+            --enable-cuvid \
             --enable-ffnvcodec \
+            --enable-libass \
+            --enable-libfdk-aac \
+            --enable-libfontconfig \
+            --enable-libfreetype \
+            --enable-libharfbuzz \
+            --enable-libnpp \
             --enable-libvmaf \
-            --enable-cuda-nvcc \
+            --enable-libzimg \
             --enable-nvenc \
             --enable-nvdec \
-            --enable-cuvid \
+            --enable-cuda-nvcc \
             --enable-shared \
             --disable-static \
             --disable-vulkan \
