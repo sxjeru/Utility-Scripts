@@ -20,9 +20,14 @@ on:
         description: Windows CUDA Toolkit version for Jimver/cuda-toolkit
         required: false
         default: 12.8.1
+      publish_release:
+        description: Publish a preview release
+        required: false
+        type: boolean
+        default: false
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   FFMPEG_REF: ${{ inputs.ffmpeg_ref || 'master' }}
@@ -679,12 +684,82 @@ jobs:
             exit 1
           fi
 
+      - name: Generate build metadata
+        id: build_meta
+        run: |
+          set -euxo pipefail
+          ffmpeg_bin="${PWD}/FFmpeg/ffmpeg-install/bin/ffmpeg.exe"
+          ffmpeg_version_line="$(${ffmpeg_bin} -hide_banner -version | head -n1)"
+          ffmpeg_version="$(printf '%s\n' "${ffmpeg_version_line}" | awk '{print $3}')"
+          ffmpeg_version_tag="$(printf '%s' "${ffmpeg_version}" | tr -cs 'A-Za-z0-9._-' '-')"
+          ffmpeg_version_tag="${ffmpeg_version_tag#-}"
+          ffmpeg_version_tag="${ffmpeg_version_tag%-}"
+          ffmpeg_commit="$(git -C FFmpeg rev-parse HEAD)"
+          vmaf_commit="$(git -C vmaf rev-parse HEAD)"
+          nv_codec_headers_commit="$(git -C nv-codec-headers rev-parse HEAD)"
+          libvmaf_version="$(PKG_CONFIG_PATH="$(cygpath -u "${VMAF_PREFIX}")/lib/pkgconfig:/mingw64/lib/pkgconfig" pkg-config --modversion libvmaf)"
+          nvcc_version="$(nvcc --version | tail -n1)"
+          gcc_version="$(gcc --version | head -n1)"
+          meson_version="$(meson --version)"
+          ninja_version="$(ninja --version)"
+
+          {
+            echo "## Windows FFmpeg VMAF_CUDA build"
+            echo
+            echo "- FFmpeg version: \`${ffmpeg_version}\`"
+            echo "- FFmpeg ref: \`${FFMPEG_REF}\`"
+            echo "- FFmpeg commit: \`${ffmpeg_commit}\`"
+            echo "- VMAF ref: \`${VMAF_REF}\`"
+            echo "- VMAF commit: \`${vmaf_commit}\`"
+            echo "- nv-codec-headers ref: \`${NV_CODEC_HEADERS_REF}\`"
+            echo "- nv-codec-headers commit: \`${nv_codec_headers_commit}\`"
+            echo "- CUDA version: \`${CUDA_VERSION}\`"
+            echo "- libvmaf version: \`${libvmaf_version}\`"
+            echo "- NVCC version: \`${nvcc_version}\`"
+            echo "- GCC version: \`${gcc_version}\`"
+            echo "- Meson version: \`${meson_version}\`"
+            echo "- Ninja version: \`${ninja_version}\`"
+            echo
+            echo "<details>"
+            echo "<summary>Detailed build metadata</summary>"
+            echo
+            echo '```text'
+            echo "ffmpeg_version=${ffmpeg_version}"
+            echo "ffmpeg_version_line=${ffmpeg_version_line}"
+            echo "ffmpeg_ref=${FFMPEG_REF}"
+            echo "ffmpeg_commit=${ffmpeg_commit}"
+            echo "vmaf_ref=${VMAF_REF}"
+            echo "vmaf_commit=${vmaf_commit}"
+            echo "nv_codec_headers_ref=${NV_CODEC_HEADERS_REF}"
+            echo "nv_codec_headers_commit=${nv_codec_headers_commit}"
+            echo "cuda_version=${CUDA_VERSION}"
+            echo "libvmaf_version=${libvmaf_version}"
+            echo "nvcc_version=${nvcc_version}"
+            echo "gcc_version=${gcc_version}"
+            echo "meson_version=${meson_version}"
+            echo "ninja_version=${ninja_version}"
+            echo '```'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo "ffmpeg_version=${ffmpeg_version}"
+            echo "ffmpeg_version_tag=${ffmpeg_version_tag}"
+            echo "archive_name=ffmpeg-windows-vmaf-cuda-${ffmpeg_version_tag}.tar.gz"
+            echo "release_tag=preview-windows-vmaf-cuda-${ffmpeg_version_tag}"
+            echo "release_name=Windows FFmpeg VMAF CUDA ${ffmpeg_version}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Package Windows artifact
+        env:
+          ARCHIVE_NAME: ${{ steps.build_meta.outputs.archive_name }}
         run: |
           set -euxo pipefail
           ffmpeg_prefix="${PWD}/FFmpeg/ffmpeg-install"
           cuda_path_unix="$(cygpath -u "${CUDA_PATH}")"
           vmaf_prefix="$(cygpath -u "${VMAF_PREFIX}")"
+          workspace_unix="$(cygpath -u "${GITHUB_WORKSPACE}")"
           mkdir -p "${ffmpeg_prefix}/bin"
           cp -a "${vmaf_prefix}"/bin/*.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
           cp -a /mingw64/bin/libgcc_s_seh-1.dll "${ffmpeg_prefix}/bin/" 2>/dev/null || true
@@ -694,11 +769,25 @@ jobs:
           "${ffmpeg_prefix}/bin/ffmpeg.exe" -hide_banner -buildconf | tee "${ffmpeg_prefix}/buildconf.txt"
           "${ffmpeg_prefix}/bin/ffmpeg.exe" -hide_banner -filters | tee "${ffmpeg_prefix}/filters.txt"
           grep -q 'libvmaf_cuda' "${ffmpeg_prefix}/filters.txt"
-          tar -C "${ffmpeg_prefix}" -czf "${GITHUB_WORKSPACE}/ffmpeg-windows-vmaf-cuda.tar.gz" .
+          tar -C "${ffmpeg_prefix}" -czf "${workspace_unix}/${ARCHIVE_NAME}" .
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: ffmpeg-windows-vmaf-cuda
-          path: ffmpeg-windows-vmaf-cuda.tar.gz
+          path: ${{ steps.build_meta.outputs.archive_name }}
           if-no-files-found: error
+
+      - name: Publish preview release
+        if: ${{ inputs.publish_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.build_meta.outputs.release_tag }}
+          name: ${{ steps.build_meta.outputs.release_name }}
+          prerelease: true
+          body: |
+            Preview build for FFmpeg `${{ steps.build_meta.outputs.ffmpeg_version }}`.
+
+            Detailed build metadata is available in the Actions run summary.
+          files: |
+            ${{ steps.build_meta.outputs.archive_name }}
