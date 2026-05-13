@@ -1,7 +1,7 @@
 name: build-ffmpeg-vmaf-cuda-windows
 
 on:
-  push:
+  # push:
   workflow_dispatch:
     inputs:
       ffmpeg_ref:
@@ -672,7 +672,6 @@ jobs:
             --enable-libfontconfig \
             --enable-libfreetype \
             --enable-libharfbuzz \
-            --enable-libnpp \
             --enable-libvmaf \
             --enable-libzimg \
             --enable-nvenc \
@@ -680,7 +679,7 @@ jobs:
             --enable-cuda-nvcc \
             --enable-shared \
             --disable-static \
-            # --disable-vulkan \
+            --disable-vulkan \
             --disable-ffplay \
             --disable-ffprobe \
             --disable-doc \
