@@ -135,6 +135,77 @@ jobs:
             exit 1
           fi
 
+          echo "==== libvmaf public export macros before patch ===="
+          grep -nE 'VMAF_PUBLIC|VMAF_DLL|VMAF_BUILDING_DLL|dllexport|dllimport' libvmaf/include/libvmaf/*.h || true
+
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          marker = 'V0_PATCHED_VMAF_PUBLIC'
+          patch_def = (
+              "/* V0_PATCHED_VMAF_PUBLIC */\n"
+              "#if defined(_WIN32) || defined(__CYGWIN__)\n"
+              "#  if defined(VMAF_DLL)\n"
+              "#    if defined(VMAF_BUILDING_DLL)\n"
+              "#      define VMAF_PUBLIC __declspec(dllexport)\n"
+              "#    else\n"
+              "#      define VMAF_PUBLIC __declspec(dllimport)\n"
+              "#    endif\n"
+              "#  else\n"
+              "#    define VMAF_PUBLIC\n"
+              "#  endif\n"
+              "#elif defined(__GNUC__) && __GNUC__ >= 4\n"
+              "#  define VMAF_PUBLIC __attribute__((visibility(\"default\")))\n"
+              "#else\n"
+              "#  define VMAF_PUBLIC\n"
+              "#endif\n"
+          )
+          prototype_pattern = re.compile(
+              r'(^[ \t]*)(?!(?:VMAF_PUBLIC\b))(int|void|const[ \t]+char[ \t]*\*)[ \t\r\n]+(vmaf_[A-Za-z0-9_]+[ \t]*\()',
+              flags=re.MULTILINE,
+          )
+
+          header_dir = Path('libvmaf/include/libvmaf')
+          headers = sorted(header_dir.glob('*.h'))
+          if not headers:
+              raise SystemExit('libvmaf public headers not found')
+
+          macro_patched = []
+          export_patched = {}
+          for path in headers:
+              text = path.read_text()
+              new_text = text
+
+              if marker not in new_text:
+                  if 'VMAF_PUBLIC' in new_text:
+                      new_text, _ = re.subn(
+                          r'(^|\n)[ \t]*#[ \t]*define[ \t]+VMAF_PUBLIC\b[^\n]*',
+                          lambda m: m.group(1) + patch_def.rstrip('\n'),
+                          new_text,
+                          flags=re.MULTILINE,
+                      )
+                  if marker not in new_text:
+                      new_text = patch_def + new_text
+                  macro_patched.append(path.name)
+
+              new_text, export_count = prototype_pattern.subn(
+                  r'\1VMAF_PUBLIC \2 \3',
+                  new_text,
+              )
+              if export_count:
+                  export_patched[path.name] = export_count
+
+              if new_text != text:
+                  path.write_text(new_text)
+
+          print('macro patched headers:', ', '.join(macro_patched) if macro_patched else 'none')
+          print('export patched headers:', export_patched if export_patched else 'none')
+          PY
+
+          echo "==== libvmaf public export macros after patch ===="
+          grep -nE 'VMAF_PUBLIC|VMAF_DLL|VMAF_BUILDING_DLL|dllexport|dllimport|V0_PATCHED_VMAF_PUBLIC' libvmaf/include/libvmaf/*.h || true
+
           python - <<'PY'
           from pathlib import Path
           path = Path('libvmaf/src/feature/integer_adm.h')
@@ -420,9 +491,9 @@ jobs:
           export NVCC_CCBIN="${cuda_host_compiler}"
           export NVCC_PREPEND_FLAGS="-allow-unsupported-compiler -diag-suppress=108 --Wno-deprecated-gpu-targets"
           export PATH="${cuda_path_unix}/bin:${PATH}"
-          export CFLAGS="-GS- -D_USE_MATH_DEFINES"
-          export CXXFLAGS="-GS-"
-          export NVCC_PREPEND_FLAGS="${NVCC_PREPEND_FLAGS} -Xcompiler=-GS-"
+          export CFLAGS="-GS- -D_USE_MATH_DEFINES -DVMAF_DLL -DVMAF_BUILDING_DLL"
+          export CXXFLAGS="-GS- -DVMAF_DLL -DVMAF_BUILDING_DLL"
+          export NVCC_PREPEND_FLAGS="${NVCC_PREPEND_FLAGS} -Xcompiler=-GS- -DVMAF_DLL -DVMAF_BUILDING_DLL"
           cat > meson-cuda.ini <<EOF
           [binaries]
           c = 'cl'
@@ -447,23 +518,51 @@ jobs:
             -Denable_tools=false \
             --prefix="${vmaf_prefix}"
           ninja -C build -v
-          if [ ! -f src/vmaf.lib ]; then
-            found_lib="$(find build src -maxdepth 3 -type f \( \
-              -name 'vmaf*.lib' -o -name 'libvmaf*.lib' -o -name 'vmaf*.a' -o -name 'libvmaf*.a' \
-            \) 2>/dev/null | head -n1)"
-            if [ -n "${found_lib}" ]; then
-              echo "Found vmaf import library: ${found_lib}"
-              if [ "${found_lib}" != "build/src/vmaf.lib" ]; then
-                cp "${found_lib}" build/src/vmaf.lib
-              fi
-              cp "${found_lib}" src/vmaf.lib
-            else
-              echo 'vmaf import/static library not found after meson build; check the libvmaf Windows build configuration' >&2
-              find build src -maxdepth 3 -type f \( \
-                -name 'vmaf*' -o -name 'libvmaf*' \
-              \) 2>/dev/null | sed 's/^/  /' >&2 || true
-              exit 1
+          found_lib=""
+          for candidate in \
+            build/src/vmaf.lib \
+            build/src/libvmaf.lib \
+            build/src/libvmaf.dll.a \
+            build/src/vmaf.dll.a \
+            build/src/libvmaf.a \
+            build/src/vmaf.a \
+            src/vmaf.lib \
+            src/libvmaf.lib \
+            src/libvmaf.dll.a \
+            src/vmaf.dll.a \
+            src/libvmaf.a \
+            src/vmaf.a; do
+            if [ -f "${candidate}" ]; then
+              found_lib="${candidate}"
+              break
             fi
+          done
+          if [ -z "${found_lib}" ]; then
+            found_lib="$(find build src -maxdepth 4 -type f \( \
+              -name 'vmaf*.lib' -o -name 'libvmaf*.lib' -o -name 'vmaf*.dll.a' -o -name 'libvmaf*.dll.a' -o -name 'vmaf*.a' -o -name 'libvmaf*.a' \
+            \) 2>/dev/null | head -n1)"
+          fi
+          if [ -n "${found_lib}" ]; then
+            echo "Found vmaf import/static library: ${found_lib}"
+            if [ "${found_lib}" != "build/src/vmaf.lib" ]; then
+              cp "${found_lib}" build/src/vmaf.lib
+            fi
+            if [ "${found_lib}" != "src/vmaf.lib" ]; then
+              cp "${found_lib}" src/vmaf.lib
+            fi
+          else
+            echo 'vmaf import/static library not found after meson build; check the libvmaf Windows build configuration' >&2
+            find build src -maxdepth 4 -type f \( \
+              -name 'vmaf*' -o -name 'libvmaf*' \
+            \) 2>/dev/null | sed 's/^/  /' >&2 || true
+            echo '--- checking .obj files for exports ---' >&2
+            if [ -d build/src/vmaf.dll.p ]; then
+              ls build/src/vmaf.dll.p/*.obj 2>/dev/null | head -n3 | while read -r o; do
+                echo "## $o" >&2
+                dumpbin //SYMBOLS "$o" 2>/dev/null | head -n50 || true
+              done >&2
+            fi
+            exit 1
           fi
           test -f build/src/vmaf.lib
           ninja -C build install
