@@ -666,7 +666,18 @@ jobs:
           make -j"$(nproc)"
           make install
 
-          cp /c/vmaf-install/bin/libvmaf-*.dll "${ffmpeg_prefix}/bin/"
+          shopt -s nullglob
+          vmaf_dlls=("${vmaf_prefix}/bin"/*vmaf*.dll)
+          if [ ${#vmaf_dlls[@]} -gt 0 ]; then
+            cp "${vmaf_dlls[@]}" "${ffmpeg_prefix}/bin/"
+          else
+            echo "No VMAF DLLs found under ${vmaf_prefix}/bin after libvmaf install" >&2
+            find "${vmaf_prefix}" -maxdepth 4 -type f \( \
+              -name '*vmaf*.dll' -o -name '*vmaf*.lib' -o -name '*vmaf*.a' \
+            \) -print >&2 || true
+            echo 'Expected at least one runtime DLL for shared libvmaf build.' >&2
+            exit 1
+          fi
 
       - name: Package Windows artifact
         run: |
