@@ -680,7 +680,7 @@ jobs:
             --enable-cuda-nvcc \
             --enable-shared \
             --disable-static \
-            --disable-vulkan \
+            # --disable-vulkan \
             --disable-ffplay \
             --disable-ffprobe \
             --disable-doc \
