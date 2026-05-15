@@ -674,6 +674,10 @@ jobs:
             --enable-libharfbuzz \
             --enable-libvmaf \
             --enable-libzimg \
+            --enable-libopus \
+            --enable-libmp3lame \
+            --enable-libdav1d \
+            --enable-libsoxr \
             --enable-nvenc \
             --enable-nvdec \
             --enable-cuda-nvcc \

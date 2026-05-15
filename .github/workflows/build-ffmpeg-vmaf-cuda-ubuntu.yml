@@ -131,6 +131,7 @@ jobs:
             --enable-libvmaf \
             --enable-nvenc \
             --enable-cuvid \
+            --disable-debug \
             --extra-cflags="-I/usr/local/include -I/usr/local/cuda/include" \
             --extra-ldflags="-L/usr/local/lib -L/usr/local/lib/x86_64-linux-gnu -L/usr/local/cuda/lib64 -Wl,-rpath,\$ORIGIN/../lib"
           grep -E 'libvmaf|libvmaf_cuda|ffnvcodec|cuda_nvcc' config.log ffbuild/config.mak || true
