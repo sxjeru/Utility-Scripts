@@ -55,7 +55,7 @@ jobs:
           arch: x64
 
       - name: Install CUDA Toolkit
-        uses: Jimver/cuda-toolkit@v0.2.24
+        uses: Jimver/cuda-toolkit@v0.2.35
         with:
           cuda: ${{ env.CUDA_VERSION }}
           method: network
