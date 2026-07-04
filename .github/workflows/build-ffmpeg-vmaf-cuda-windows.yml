@@ -674,6 +674,7 @@ jobs:
 
           ./configure \
             --prefix="${ffmpeg_prefix}" \
+            --disable-autodetect \
             --enable-gpl \
             --enable-lto \
             --enable-nonfree \
@@ -697,6 +698,7 @@ jobs:
             --enable-shared \
             --disable-static \
             --enable-libplacebo \
+            --enable-vulkan \
             --disable-ffplay \
             --disable-doc \
             --disable-debug \
@@ -834,6 +836,12 @@ jobs:
           "${ffmpeg_prefix}/bin/ffmpeg.exe" -hide_banner -buildconf | tee "${ffmpeg_prefix}/buildconf.txt"
           "${ffmpeg_prefix}/bin/ffmpeg.exe" -hide_banner -filters | tee "${ffmpeg_prefix}/filters.txt"
           grep -q 'libvmaf_cuda' "${ffmpeg_prefix}/filters.txt"
+          if grep -q -- '--enable-libplacebo' "${ffmpeg_prefix}/buildconf.txt"; then
+            grep -q 'libplacebo' "${ffmpeg_prefix}/filters.txt" || {
+              echo "libplacebo was enabled in buildconf but the libplacebo filter is missing" >&2
+              exit 1
+            }
+          fi
           tar -C "${ffmpeg_prefix}" -czf "${workspace_unix}/${ARCHIVE_NAME}" .
 
       - name: Upload Windows artifact
