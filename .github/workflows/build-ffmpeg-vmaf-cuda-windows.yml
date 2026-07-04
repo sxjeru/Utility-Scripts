@@ -47,7 +47,7 @@ jobs:
         shell: msys2 {0}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
@@ -845,7 +845,7 @@ jobs:
           tar -C "${ffmpeg_prefix}" -czf "${workspace_unix}/${ARCHIVE_NAME}" .
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ffmpeg-windows-vmaf-cuda
           path: ${{ steps.build_meta.outputs.archive_name }}
@@ -853,7 +853,7 @@ jobs:
 
       - name: Publish preview release
         if: ${{ inputs.publish_release }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.build_meta.outputs.release_tag }}
           name: ${{ steps.build_meta.outputs.release_name }}

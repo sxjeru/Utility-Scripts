@@ -45,7 +45,7 @@ jobs:
       LD_LIBRARY_PATH: /usr/local/lib:/usr/local/lib/x86_64-linux-gnu:/usr/local/cuda/lib64
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install build dependencies
         shell: bash
@@ -221,7 +221,7 @@ jobs:
           tar -C "${FFMPEG_PREFIX}" -czf "${ARCHIVE_NAME}" .
 
       - name: Upload Ubuntu artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ffmpeg-ubuntu-vmaf-cuda
           path: ${{ steps.build_meta.outputs.archive_name }}
@@ -229,7 +229,7 @@ jobs:
 
       - name: Publish preview release
         if: ${{ inputs.publish_release }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.build_meta.outputs.release_tag }}
           name: ${{ steps.build_meta.outputs.release_name }}
