@@ -1,7 +1,7 @@
 name: build-ffmpeg-vmaf-cuda-windows
 
 on:
-  # push:
+  push:
   workflow_dispatch:
     inputs:
       ffmpeg_ref:
@@ -19,7 +19,7 @@ on:
       windows_cuda_version:
         description: Windows CUDA Toolkit version for Jimver/cuda-toolkit
         required: false
-        default: 12.8.1
+        default: 13.2.0
       publish_release:
         description: Publish a preview release
         required: false
@@ -40,7 +40,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 240
     env:
-      CUDA_VERSION: ${{ inputs.windows_cuda_version || '12.8.1' }}
+      CUDA_VERSION: ${{ inputs.windows_cuda_version || '13.2.0' }}
       VMAF_PREFIX: C:\vmaf-install
     defaults:
       run:
@@ -88,7 +88,8 @@ jobs:
             mingw-w64-x86_64-yasm
             mingw-w64-x86_64-zimg
             mingw-w64-x86_64-libplacebo
-            mingw-w64-x86_64-vulkan
+            mingw-w64-x86_64-vulkan-headers
+            mingw-w64-x86_64-vulkan-loader
 
       - name: Verify toolchain
         run: |
@@ -101,6 +102,7 @@ jobs:
           command -v ninja
           where.exe cl
           where.exe link
+          test -f /mingw64/include/vulkan/vulkan.h
           nvcc --version
           gcc --version
 
