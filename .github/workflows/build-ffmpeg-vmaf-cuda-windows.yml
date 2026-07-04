@@ -674,7 +674,6 @@ jobs:
 
           ./configure \
             --prefix="${ffmpeg_prefix}" \
-            --disable-autodetect \
             --enable-gpl \
             --enable-lto \
             --enable-nonfree \
