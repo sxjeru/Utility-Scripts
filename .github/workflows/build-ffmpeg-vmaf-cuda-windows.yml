@@ -24,7 +24,7 @@ on:
         description: Publish a preview release
         required: false
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: write
@@ -87,6 +87,8 @@ jobs:
             mingw-w64-x86_64-python
             mingw-w64-x86_64-yasm
             mingw-w64-x86_64-zimg
+            mingw-w64-x86_64-libplacebo
+            mingw-w64-x86_64-vulkan
 
       - name: Verify toolchain
         run: |
