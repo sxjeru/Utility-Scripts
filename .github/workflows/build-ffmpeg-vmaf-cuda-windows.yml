@@ -1,7 +1,7 @@
 name: build-ffmpeg-vmaf-cuda-windows
 
 on:
-  push:
+  # push:
   workflow_dispatch:
     inputs:
       ffmpeg_ref:
@@ -85,6 +85,7 @@ jobs:
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-pkgconf
             mingw-w64-x86_64-python
+            mingw-w64-x86_64-shaderc
             mingw-w64-x86_64-yasm
             mingw-w64-x86_64-zimg
             mingw-w64-x86_64-libplacebo
@@ -100,9 +101,11 @@ jobs:
           command -v gcc
           command -v meson
           command -v ninja
+          command -v pkg-config
           where.exe cl
           where.exe link
           test -f /mingw64/include/vulkan/vulkan.h
+          pkg-config --exists shaderc
           nvcc --version
           gcc --version
 
@@ -671,7 +674,9 @@ jobs:
 
           ./configure \
             --prefix="${ffmpeg_prefix}" \
+            --disable-autodetect \
             --enable-gpl \
+            --enable-lto \
             --enable-nonfree \
             --enable-cuvid \
             --enable-ffnvcodec \
@@ -679,6 +684,7 @@ jobs:
             --enable-libfdk-aac \
             --enable-libfontconfig \
             --enable-libfreetype \
+            --enable-libshaderc \
             --enable-libharfbuzz \
             --enable-libvmaf \
             --enable-libzimg \
