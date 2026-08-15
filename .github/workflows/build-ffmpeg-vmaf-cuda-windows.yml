@@ -260,6 +260,7 @@ jobs:
 
           python - <<'PY'
           from pathlib import Path
+          import re
 
           def replace_once(text, old, new):
               if old not in text:
@@ -288,11 +289,14 @@ jobs:
               "thread_lib = dependency('threads')\nmath_lib = cc.find_library('m', required : false)",
               "thread_lib = dependency('threads')\nwinpthread_dependencies = []\nif host_machine.system() == 'windows' and cc.get_id() == 'msvc'\n    winpthread_path = meson.current_source_dir() / '../compat-lib'\n    winpthread_dependencies += cc.find_library('winpthread', dirs : [winpthread_path], required : true)\nendif\nmath_lib = cc.find_library('m', required : false)",
           )
-          text = replace_once(
+          text, count = re.subn(
+              r"    dependencies : \[\n      thread_lib,\n      math_lib,\n      stdatomic_dependency,\n      cuda_dependency,(\n[ \t]*\w+)?\n    \],",
+              r"    dependencies : [\n      thread_lib,\n      math_lib,\n      stdatomic_dependency,\n      cuda_dependency,\1\n    ] + winpthread_dependencies,",
               text,
-              "    dependencies : [\n      thread_lib,\n      math_lib,\n      stdatomic_dependency,\n      cuda_dependency,\n    ],",
-              "    dependencies : [\n      thread_lib,\n      math_lib,\n      stdatomic_dependency,\n      cuda_dependency,\n    ] + winpthread_dependencies,",
+              count=1,
           )
+          if count != 1:
+              raise SystemExit('patch target not found: libvmaf dependencies list')
           path.write_text(text)
           PY
 
