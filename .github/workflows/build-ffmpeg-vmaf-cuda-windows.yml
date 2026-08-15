@@ -105,6 +105,7 @@ jobs:
           where.exe cl
           where.exe link
           test -f /mingw64/include/vulkan/vulkan.h
+          command -v glslc
           pkg-config --exists shaderc
           nvcc --version
           gcc --version
@@ -676,6 +677,11 @@ jobs:
             -o /tmp/test-vmaf-ffmpeg.exe \
             -Wl,--allow-multiple-definition
 
+          extra_ffmpeg_opts=()
+          if ./configure --help | grep -q -- '--enable-libshaderc'; then
+            extra_ffmpeg_opts+=(--enable-libshaderc)
+          fi
+
           ./configure \
             --prefix="${ffmpeg_prefix}" \
             --disable-autodetect \
@@ -688,7 +694,6 @@ jobs:
             --enable-libfdk-aac \
             --enable-libfontconfig \
             --enable-libfreetype \
-            --enable-libshaderc \
             --enable-libharfbuzz \
             --enable-libvmaf \
             --enable-libzimg \
@@ -703,6 +708,7 @@ jobs:
             --disable-static \
             --enable-libplacebo \
             --enable-vulkan \
+            "${extra_ffmpeg_opts[@]}" \
             --disable-ffplay \
             --disable-doc \
             --disable-debug \
